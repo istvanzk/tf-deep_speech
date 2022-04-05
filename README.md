@@ -1,4 +1,5 @@
 # DeepSpeech2 Model fork, 06.04.2022
+![Exp](https://img.shields.io/badge/Fork-experimental-orange.svg)
 
 This is a stand-alone fork for the Tensorflow [DeepSpeech2](https://github.com/tensorflow/models/tree/master/research/deep_speech) code.
 
