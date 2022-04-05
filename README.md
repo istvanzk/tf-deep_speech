@@ -7,9 +7,10 @@ Development plans:
 - Updates to work with [tf-models-official](https://pypi.org/project/tf-models-official/) python package and with TF2.8
 - Updates to use [absl-py](https://abseil.io/docs/python/) python package
 - Updates to work with [Common Voice Corpus 2](https://commonvoice.mozilla.org/en/datasets) 
+- Make it work with [Rahsspy](https://github.com/rhasspy/rhasspy), as replacement for the [Mozilla DeepSpeech](https://github.com/mozilla/DeepSpeech)
 
 
-# DeepSpeech2 Model - Original ReadMe
+# Original ReadMe: DeepSpeech2 Model
 
 ![No Maintenance Intended](https://img.shields.io/badge/No%20Maintenance%20Intended-%E2%9C%95-red.svg)
 [![TensorFlow 1.15.3](https://img.shields.io/badge/TensorFlow-1.15.3-FF6F00?logo=tensorflow)](https://github.com/tensorflow/tensorflow/releases/tag/v1.15.3)
