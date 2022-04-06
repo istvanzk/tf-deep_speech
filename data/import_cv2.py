@@ -21,14 +21,16 @@ from multiprocessing import Pool
 import progressbar
 import sox
 
-from deepspeech_training.util.downloader import SIMPLE_BAR
-from deepspeech_training.util.importers import (
+SIMPLE_BAR = ['Progress ', progressbar.Bar(), ' ', progressbar.Percentage(), ' completed']
+
+from .importers import (
     get_counter,
     get_imported_samples,
     get_importers_parser,
     get_validate_label,
     print_import_report,
 )
+
 from ds_ctcdecoder import Alphabet
 
 FIELDNAMES = ["wav_filename", "wav_filesize", "transcript"]
