@@ -15,7 +15,7 @@ def main():
     install_requires_base = [
         'absl-py',
         'sox>=1.3.3',
-        'soundfile>=0.23.3',
+        'soundfile>=0.10.2',
         'nltk>=3.3',
         'pandas>=0.23.3'
     ]
