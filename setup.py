@@ -14,19 +14,17 @@ def main():
 
     install_requires_base = [
         'absl-py',
-        'tf-models-official',
-        'sox',
-        'soundfile',
-    ]
-
-    decoder_pypi_dep = [
-        'ds_ctcdecoder == {}'.format(version)
+        'sox>=1.3.3',
+        'soundfile>=0.23.3',
+        'nltk>=3.3',
+        'pandas>=0.23.3'
     ]
 
     tensorflow_pypi_dep = [
+        'tf-models-official',
         'tensorflow >= 2.3.0'
     ]
-    install_requires = install_requires_base + decoder_pypi_dep + tensorflow_pypi_dep
+    install_requires = install_requires_base + tensorflow_pypi_dep
 
     # TODO: Check if this is needed
     #horovod_pypi_dep = [
