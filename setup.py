@@ -55,7 +55,7 @@ def main():
             'Operating System :: OS Independent',
         ],
         #package_dir={'': 'training'},
-        packages=['tf-deep_speech'],
+        packages=[''],
         python_requires='>=3.8, <4',
         install_requires=install_requires,
         # If there are data files included in your packages that need to be
