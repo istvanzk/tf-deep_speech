@@ -1,4 +1,5 @@
 #  Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+#  Updates to handle Mozilla Common Voice Corpus datasets, by Istvn Z. Kovacs
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,7 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 # ==============================================================================
-"""Download and preprocess LibriSpeech dataset for DeepSpeech model."""
+"""
+Download and preprocess LibriSpeech dataset for DeepSpeech model.
+Preprocess Mozilla Common Voice Corpus dataset for DeepSpeech model.
+"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -51,6 +55,8 @@ LIBRI_SPEECH_URLS = {
         "http://www.openslr.org/resources/12/test-other.tar.gz"
 }
 
+# These need to be downloaded manually from https://commonvoice.mozilla.org/en/datasets
+CV2_SPEECH_FILES = {"hu": "cv-corpus-8.0-2022-01-19-hu.tar.gz"}
 
 def download_and_extract(directory, url):
   """Download and extract the given split of dataset.
@@ -83,12 +89,24 @@ def download_and_extract(directory, url):
   finally:
     tf.io.gfile.remove(tar_filepath)
 
+def extract_cv2(directory, tar_filepath):
+  """Extract the given dataset (saved locally).
+
+  Args:
+    directory: the directory where to extract the tarball.
+    tar_filepath: the directory where the tarball is.
+  """
+  with tarfile.open(tar_filepath, "r") as tar:
+      tar.extractall(directory)
+
 
 def convert_audio_and_split_transcript(input_dir, source_name, target_name,
-                                       output_dir, output_file):
-  """Convert FLAC to WAV and split the transcript.
+                                       output_dir, output_file, use_cv2 = False):
+  """
+  Convert FLAC (Libri Speech) to WAV and split the transcript, or
+  Convert MP3 (Mozilla CV) to WAV and split the transcript.
 
-  For audio file, convert the format from FLAC to WAV using the sox.Transformer
+  For audio file, convert the format from FLAC/MP3 to WAV using the sox.Transformer
   library.
   For transcripts, each line contains the sequence id and the corresponding
   transcript (separated by space):
@@ -98,7 +116,7 @@ def convert_audio_and_split_transcript(input_dir, source_name, target_name,
    1-2-1 transcript_of_1-2-1.flac
    ...
 
-  Each sequence id has a corresponding .flac file.
+  Each sequence id has a corresponding .flac/.mp3 file.
   Parse the transcript file and generate a new csv file which has three columns:
   "wav_filename": the absolute path to a wav file.
   "wav_filesize": the size of the corresponding wav file.
@@ -122,8 +140,9 @@ def convert_audio_and_split_transcript(input_dir, source_name, target_name,
 
   files = []
   tfm = Transformer()
-  # Convert all FLAC file into WAV format. At the same time, generate the csv
+  # Convert all FLAC files into WAV format. At the same time, generate the csv
   # file.
+  # TODO: Convert MP3 files
   for root, _, filenames in tf.io.gfile.walk(source_dir):
     for filename in fnmatch.filter(filenames, "*.trans.txt"):
       trans_file = os.path.join(root, filename)
@@ -171,12 +190,32 @@ def download_and_process_datasets(directory, datasets):
         dataset_dir + "/LibriSpeech", dataset, dataset + "-wav",
         dataset_dir + "/LibriSpeech", dataset + ".csv")
 
+def process_datasets_cv2(directory, datasets, data_type):
+  """Pre-process the specified list of Mozilla Common Voice Corpus datasets.
+
+  Args:
+    directory: the directory to put all the preprocessed data.
+    datasets: list of dataset names that will be processed.
+    data_type: the 'train', 'dev' or 'test' files to be processed
+  """
+
+  logging.info("Preparing Mozilla Common Voice Corpus dataset: {}".format(
+      ",".join(datasets)))
+  for dataset in datasets:
+    logging.info("Preparing dataset %s", dataset)
+    dataset_dir = os.path.join(directory, dataset)
+    extract_cv2(dataset_dir, CV2_SPEECH_FILES[dataset])
+    convert_audio_and_split_transcript(
+        dataset_dir + "/CV2", dataset, dataset + "-wav",
+        dataset_dir + "/CV2", dataset + ".csv")
 
 def define_data_download_flags():
   """Define flags for data downloading."""
   absl_flags.DEFINE_string(
       "data_dir", "/tmp/librispeech_data",
-      "Directory to download data and extract the tarball")
+      "Directory to download data and/ or extract the tarball")
+  absl_flags.DEFINE_bool("use_cv2", False,
+                         "If true, Mozilla Common Voice Corpus datasets are used. The tarballs need to be downloaded manually in the same folder as this script!")
   absl_flags.DEFINE_bool("train_only", False,
                          "If true, only download the training set")
   absl_flags.DEFINE_bool("dev_only", False,
@@ -189,17 +228,28 @@ def main(_):
   if not tf.io.gfile.exists(FLAGS.data_dir):
     tf.io.gfile.makedirs(FLAGS.data_dir)
 
-  if FLAGS.train_only:
-    download_and_process_datasets(
+  # Use Mozilla Common Voice Corpus data  
+  if FLAGS.use_cv2:
+    if FLAGS.train_only:
+      process_datasets_cv2(FLAGS.data_dir, ["hu"], "train")
+    elif FLAGS.dev_only:
+      process_datasets_cv2(FLAGS.data_dir, ["hu"], "dev")
+    elif FLAGS.test_only:
+      process_datasets_cv2(FLAGS.data_dir, ["hu"], "test")
+      
+  # Use Libri Speech data
+  else:
+    if FLAGS.train_only:
+      download_and_process_datasets(
         FLAGS.data_dir,
         ["train-clean-100", "train-clean-360", "train-other-500"])
-  elif FLAGS.dev_only:
-    download_and_process_datasets(FLAGS.data_dir, ["dev-clean", "dev-other"])
-  elif FLAGS.test_only:
-    download_and_process_datasets(FLAGS.data_dir, ["test-clean", "test-other"])
-  else:
-    # By default we download the entire dataset.
-    download_and_process_datasets(FLAGS.data_dir, LIBRI_SPEECH_URLS.keys())
+    elif FLAGS.dev_only:
+      download_and_process_datasets(FLAGS.data_dir, ["dev-clean", "dev-other"])
+    elif FLAGS.test_only:
+      download_and_process_datasets(FLAGS.data_dir, ["test-clean", "test-other"])
+    else:
+      # By default we download the entire dataset.
+      download_and_process_datasets(FLAGS.data_dir, LIBRI_SPEECH_URLS.keys())
 
 
 if __name__ == "__main__":
