@@ -29,7 +29,8 @@ import data.dataset as dataset
 import decoder
 import deep_speech_model
 from official.utils.flags import core as flags_core
-from official.utils.misc import distribution_utils
+#from official.utils.misc import distribution_utils
+from official.common import distribute_utils as distribution_utils
 from official.utils.misc import model_helpers
 
 # Default vocabulary file
