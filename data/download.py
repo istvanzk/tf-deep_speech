@@ -185,7 +185,7 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
 
     For audio file, convert the format from MP3 to WAV using the sox.Transformer library.
     For transcripts (tsv), each line contains as first 3 items the client id, the audio file name/path and the corresponding
-    sentence transcript (separated by space):
+    sentence transcript (separated by tab):
     Input data format: client_id	path	sentence	up_votes	down_votes	age	gender	accents	locale	segment
     For example:
     4408011d40f909e7f9ed5b0a714a697a1f41ee1f42ad6d4b350099adc4070589a2206ab87a05e1cfd1faa41c471c5c5d3e2dc6b12de46c83472a765ec0d21953 common_voice_hu_25518849.mp3	Berki Péter Nagybányán született.
@@ -218,7 +218,10 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
     trans_file = os.path.join(input_dir, source_name + ".tsv")
     with codecs.open(trans_file, "r", "utf-8") as fin:
         for line in fin:
-            clientid, mp3file, transcript, _ = line.split(" ", 3)
+            clientid, mp3file, transcript, _ = line.split("\t", 3)
+            # Skip file header
+            if clientid == "client_id":
+                continue
             # We do a encode-decode transformation here because the output type
             # of encode is a bytes object, we need convert it to string.
             transcript = unicodedata.normalize("NFKD", transcript).encode(
@@ -281,16 +284,25 @@ def process_datasets_cv2(directory, datasets):
 def define_data_download_flags():
     """Define flags for data downloading."""
     absl_flags.DEFINE_string(
-        "data_dir", "/tmp/librispeech_data",
-        "Directory to download librispeech data or to extract the cv2 tarball")
-    absl_flags.DEFINE_bool("use_cv2", False,
-                            "If true, Mozilla Common Voice Corpus datasets are used. The tarballs need to be downloaded manually in the same folder as this script!")
-    absl_flags.DEFINE_bool("train_only", False,
-                            "If true, only download the training set")
-    absl_flags.DEFINE_bool("dev_only", False,
-                            "If true, only download the dev set")
-    absl_flags.DEFINE_bool("test_only", False,
-                            "If true, only download the test set")
+        name="data_dir", 
+        default="/tmp/librispeech_data",
+        help="Directory to download librispeech data or to extract the cv2 tarball")
+    absl_flags.DEFINE_bool(
+        name="use_cv2", 
+        default=False,
+        help="If true, Mozilla Common Voice Corpus datasets are used. The tarballs need to be downloaded manually in the same folder as this script!")
+    absl_flags.DEFINE_bool(
+        name="train_only", 
+        default=False,
+        help="If true, only download the training set")
+    absl_flags.DEFINE_bool(
+        name="dev_only", 
+        default=False,
+        help="If true, only download the dev set")
+    absl_flags.DEFINE_bool(
+        name="test_only", 
+        default=False,
+        help="If true, only download the test set")
 
 
 def main(_):
