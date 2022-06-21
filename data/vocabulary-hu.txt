@@ -36,5 +36,9 @@ w
 x
 y
 z
-
+-
+.
+,
+!
+?
 # end of vocabulary
