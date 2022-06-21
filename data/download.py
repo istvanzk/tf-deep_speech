@@ -225,7 +225,7 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
             # We do a encode-decode transformation here because the output type
             # of encode is a bytes object, we need convert it to string.
             transcript = unicodedata.normalize("NFKD", transcript).encode(
-                "ascii").decode("ascii").strip().lower()
+                "utf8").decode("utf8").strip().lower()
 
             # Convert MP3 to WAV.
             mp3_file = os.path.join(source_dir, mp3file)
