@@ -107,7 +107,7 @@ def extract_cv2(directory, tar_filepath):
         with tarfile.open(tar_filepath, "r") as tar:
             tar.extractall(directory)
     else:
-        logging.warning(f"The input tarball {tar_filepath} cannot be accessed!")
+        logging.warning(f"The input tarball {tar_filepath} cannot be accessed! Already unpacked?")
     
 
 
@@ -203,7 +203,7 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
         output_dir: the directory to place the newly generated csv files
     """
 
-    logging.info("Preprocessing CV2 audio and transcript for %s" % source_name)
+    logging.info("Preprocessing CV2 audio and transcript for: %s" % source_name)
 
     source_dir = os.path.join(input_dir, "clips")
     target_dir = os.path.join(input_dir, target_name)
@@ -225,7 +225,7 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
             # We do a encode-decode transformation here because the output type
             # of encode is a bytes object, we need convert it to string.
             transcript = unicodedata.normalize("NFKD", transcript).encode(
-                "ascii", "ignore").decode("ascii", "ignore").strip().lower()
+                "ascii").decode("ascii").strip().lower()
 
             # Convert MP3 to WAV.
             mp3_file = os.path.join(source_dir, mp3file)
