@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # List of alphabets (utf-8 encoded). Note that '#' starts a comment line, which
 # will be ignored by the parser.
 # begin of vocabulary
@@ -31,6 +32,7 @@ t
 u
 ú
 ű
+ü
 v
 w
 x
