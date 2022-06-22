@@ -128,12 +128,14 @@ def _preprocess_data(file_path):
     file_size.
   """
   logging.info("Loading data set {}".format(file_path))
-  with tf.io.gfile.GFile(file_path, "r", "utf-8") as f:
+  with tf.io.gfile.GFile(file_path, "r") as f:
     lines = f.read().splitlines()
   # Skip the csv header in lines[0].
   lines = lines[1:]
   # The metadata file is tab separated.
-  lines = [line.split("\t", 2) for line in lines]
+  #lines = [line.split("\t", 2) for line in lines]
+  import unicodedata
+  lines = [unicodedata.normalize("NFKD",line).encode("utf-8").decode("utf-8").split("\t", 2) for line in lines]  
   # Sort input data by the length of audio sequence.
   lines.sort(key=lambda item: int(item[1]))
 
