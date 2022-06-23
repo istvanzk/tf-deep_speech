@@ -128,14 +128,27 @@ def _preprocess_data(file_path):
     file_size.
   """
   logging.info("Loading data set {}".format(file_path))
-  with tf.io.gfile.GFile(file_path, "r") as f:
-    lines = f.read().splitlines()
-  # Skip the csv header in lines[0].
-  lines = lines[1:]
-  # The metadata file is tab separated.
-  #lines = [line.split("\t", 2) for line in lines]
-  import unicodedata
-  lines = [unicodedata.normalize("NFKD",line).encode("utf-8").decode("utf-8").split("\t", 2) for line in lines]  
+  import csv
+  with open(file_path, encoding="utf8") as csvfile:
+    # The metadata file is tab separated.
+    csvreader = csv.reader(csvfile, delimiter="\t")
+    lines =[]
+    for row in csvreader:
+      # Skip the csv header 
+      if row[0] == "wav_filename":
+        continue
+      lines.append(row)       
+    
+  # with tf.io.gfile.GFile(file_path, "r") as f:
+  #   lines = f.read().splitlines()
+  # # Skip the csv header in lines[0].
+  # lines = lines[1:]
+  # # The metadata file is tab separated.
+  # lines = [line.split("\t", 2) for line in lines]
+  
+  # import unicodedata
+  # lines = [unicodedata.normalize("NFKD",line).encode("utf-8").decode("utf-8").split("\t", 2) for line in lines]  
+
   # Sort input data by the length of audio sequence.
   lines.sort(key=lambda item: int(item[1]))
 
