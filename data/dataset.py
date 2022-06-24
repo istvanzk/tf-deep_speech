@@ -208,7 +208,7 @@ def batch_wise_dataset_shuffle(entries, epoch_index, sortagrad, batch_size):
         random.shuffle(total_buckets)
         shuffled_entries = []
         for i in total_buckets:
-        shuffled_entries.extend(entries[i * batch_size : (i + 1) * batch_size])
+            shuffled_entries.extend(entries[i * batch_size : (i + 1) * batch_size])
         # If the last batch doesn't contain enough batch_size examples,
         # just append it to the shuffled_entries.
         shuffled_entries.extend(entries[max_buckets * batch_size:])
@@ -237,21 +237,21 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
     def _gen_data():
         """Dataset generator function."""
         for audio_file, _, transcript in data_entries:
-        features = _preprocess_audio(
-            audio_file, audio_featurizer, feature_normalize)
-        labels = featurizer.compute_label_feature(
-            transcript, text_featurizer.token_to_index)
-        input_length = [features.shape[0]]
-        label_length = [len(labels)]
-        # Yield a tuple of (features, labels) where features is a dict containing
-        # all info about the actual data features.
-        yield (
-            {
-                "features": features,
-                "input_length": input_length,
-                "label_length": label_length
-            },
-            labels)
+            features = _preprocess_audio(
+                audio_file, audio_featurizer, feature_normalize)
+            labels = featurizer.compute_label_feature(
+                transcript, text_featurizer.token_to_index)
+            input_length = [features.shape[0]]
+            label_length = [len(labels)]
+            # Yield a tuple of (features, labels) where features is a dict containing
+            # all info about the actual data features.
+            yield (
+                {
+                    "features": features,
+                    "input_length": input_length,
+                    "label_length": label_length
+                },
+                labels)
 
     dataset = tf.data.Dataset.from_generator(
         _gen_data,
