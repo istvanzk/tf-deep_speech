@@ -263,7 +263,7 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
                 "input_length": tf.TensorSpec(shape=(1), dtype=tf.int32),
                 "label_length": tf.TensorSpec(shape=(1), dtype=tf.int32)
             },
-            tf.TensorSpec(shape=(), dtype=tf.int32)
+            tf.TensorSpec(shape=(None), dtype=tf.int32)
         )
     )
         # output_types=(
