@@ -253,23 +253,34 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
                 },
                 labels)
 
+    # Updated to use output_signature argument:
+    # https://www.tensorflow.org/versions/r2.8/api_docs/python/tf/data/Dataset#from_generator
     dataset = tf.data.Dataset.from_generator(
         _gen_data,
-        output_types=(
+        output_signature=(
             {
-                "features": tf.float32,
-                "input_length": tf.int32,
-                "label_length": tf.int32
+                "features": tf.TensorSpec(shape=(None, num_feature_bins, 1), dtype=tf.float32),
+                "input_length": tf.TensorSpec(shape=(1), dtype=tf.int32),
+                "label_length": tf.TensorSpec(shape=(1), dtype=tf.int32)
             },
-            tf.int32),
-        output_shapes=(
-            {
-                "features": tf.TensorShape([None, num_feature_bins, 1]),
-                "input_length": tf.TensorShape([1]),
-                "label_length": tf.TensorShape([1])
-            },
-            tf.TensorShape([None]))
+            tf.TensorSpec(shape=(), dtype=tf.int32)
+        )
     )
+        # output_types=(
+        #     {
+        #         "features": tf.float32,
+        #         "input_length": tf.int32,
+        #         "label_length": tf.int32
+        #     },
+        #     tf.int32),
+        # output_shapes=(
+        #     {
+        #         "features": tf.TensorShape([None, num_feature_bins, 1]),
+        #         "input_length": tf.TensorShape([1]),
+        #         "label_length": tf.TensorShape([1])
+        #     },
+        #     tf.TensorShape([None]))
+    
 
     # Repeat and batch the dataset
     dataset = dataset.repeat(repeat)
