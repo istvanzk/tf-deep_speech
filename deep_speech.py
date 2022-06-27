@@ -24,6 +24,7 @@ from absl import app as absl_app
 from absl import flags
 from absl import logging
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # pylint: enable=g-bad-import-order
 
 import data.dataset as dataset
