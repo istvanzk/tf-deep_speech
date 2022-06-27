@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #  Copyright 2018 The TensorFlow Authors. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -87,10 +88,17 @@ class AudioFeaturizer(object):
 
 def compute_label_feature(text, token_to_idx):
   """Convert string to a list of integers."""
-  tokens = list(text.strip().lower())
-  feats = [token_to_idx[token] for token in tokens]
-  return feats
-
+  #tokens = list(text.strip().lower())
+  import unicodedata
+  tokens = list(unicodedata.normalize("NFC", text.strip().lower()))
+  try:
+    feats = [token_to_idx[token] for token in tokens]
+    return feats
+  except KeyError:
+    print(text)
+    print(tokens)
+    print(token_to_idx)
+    raise
 
 class TextFeaturizer(object):
   """Extract text feature based on char-level granularity.
@@ -112,7 +120,7 @@ class TextFeaturizer(object):
       if line.startswith("#"):
         # Skip from reading comment line.
         continue
-      self.token_to_index[line] = index
-      self.index_to_token[index] = line
+      self.token_to_index[unicodedata.normalize("NFC",line)] = index
+      self.index_to_token[index] = unicodedata.normalize("NFC",line)
       self.speech_labels += line
       index += 1
