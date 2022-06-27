@@ -120,8 +120,8 @@ class TextFeaturizer(object):
             if line.startswith("#"):
                 # Skip from reading comment line.
                 continue
-        import unicodedata    
-        self.token_to_index[unicodedata.normalize("NFC",line)] = index
-        self.index_to_token[index] = unicodedata.normalize("NFC",line)
-        self.speech_labels += line
-        index += 1
+            import unicodedata    
+            self.token_to_index[unicodedata.normalize("NFC",line)] = index
+            self.index_to_token[index] = unicodedata.normalize("NFC",line)
+            self.speech_labels += line
+            index += 1
