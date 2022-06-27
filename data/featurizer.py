@@ -20,7 +20,7 @@ from __future__ import print_function
 
 import codecs
 import numpy as np
-
+import unicodedata
 
 def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
                                 window_ms=20.0, max_freq=None, eps=1e-14):
@@ -89,7 +89,6 @@ class AudioFeaturizer(object):
 def compute_label_feature(text, token_to_idx):
     """Convert string to a list of integers."""
     #tokens = list(text.strip().lower())
-    import unicodedata
     tokens = list(unicodedata.normalize("NFC", text.strip().lower()))
     try:
         feats = [token_to_idx[token] for token in tokens]
@@ -120,7 +119,6 @@ class TextFeaturizer(object):
             if line.startswith("#"):
                 # Skip from reading comment line.
                 continue
-            import unicodedata    
             self.token_to_index[unicodedata.normalize("NFC",line)] = index
             self.index_to_token[index] = unicodedata.normalize("NFC",line)
             self.speech_labels += line
