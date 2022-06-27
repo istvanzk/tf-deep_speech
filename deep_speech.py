@@ -19,12 +19,19 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+# Disable all GPUs. This prevents errors caused by all workers trying to use the same GPU. 
+# In a real-world application, each worker would be on a different machine.
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+# Reset the 'TF_CONFIG' environment variable
+#os.environ.pop('TF_CONFIG', None)
+
 # pylint: disable=g-bad-import-order
 from absl import app as absl_app
 from absl import flags
 from absl import logging
 import tensorflow as tf
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+#tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # pylint: enable=g-bad-import-order
 
 import data.dataset as dataset
