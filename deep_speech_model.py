@@ -36,142 +36,235 @@ _CONV_FILTERS = 32
 
 
 def batch_norm(inputs, training):
-  """Batch normalization layer.
+    """Batch normalization layer.
 
-  Note that the momentum to use will affect validation accuracy over time.
-  Batch norm has different behaviors during training/evaluation. With a large
-  momentum, the model takes longer to get a near-accurate estimation of the
-  moving mean/variance over the entire training dataset, which means we need
-  more iterations to see good evaluation results. If the training data is evenly
-  distributed over the feature space, we can also try setting a smaller momentum
-  (such as 0.1) to get good evaluation result sooner.
+    Note that the momentum to use will affect validation accuracy over time.
+    Batch norm has different behaviors during training/evaluation. With a large
+    momentum, the model takes longer to get a near-accurate estimation of the
+    moving mean/variance over the entire training dataset, which means we need
+    more iterations to see good evaluation results. If the training data is evenly
+    distributed over the feature space, we can also try setting a smaller momentum
+    (such as 0.1) to get good evaluation result sooner.
 
-  Args:
-    inputs: input data for batch norm layer.
-    training: a boolean to indicate if it is in training stage.
+    Args:
+        inputs: input data for batch norm layer.
+        training: a boolean to indicate if it is in training stage.
 
-  Returns:
-    tensor output from batch norm layer.
-  """
-  return tf.keras.layers.BatchNormalization(
-      momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(inputs, training=training)
+    Returns:
+        tensor output from batch norm layer.
+    """
+    return tf.keras.layers.BatchNormalization(
+        momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(inputs, training=training)
 
 
 def _conv_bn_layer(inputs, padding, filters, kernel_size, strides, layer_id,
                    training):
-  """Defines 2D convolutional + batch normalization layer.
+    """Defines 2D convolutional + batch normalization layer.
 
-  Args:
-    inputs: input data for convolution layer.
-    padding: padding to be applied before convolution layer.
-    filters: an integer, number of output filters in the convolution.
-    kernel_size: a tuple specifying the height and width of the 2D convolution
-      window.
-    strides: a tuple specifying the stride length of the convolution.
-    layer_id: an integer specifying the layer index.
-    training: a boolean to indicate which stage we are in (training/eval).
+    Args:
+        inputs: input data for convolution layer.
+        padding: padding to be applied before convolution layer.
+        filters: an integer, number of output filters in the convolution.
+        kernel_size: a tuple specifying the height and width of the 2D convolution
+        window.
+        strides: a tuple specifying the stride length of the convolution.
+        layer_id: an integer specifying the layer index.
+        training: a boolean to indicate which stage we are in (training/eval).
 
-  Returns:
-    tensor output from the current layer.
-  """
-  # Perform symmetric padding on the feature dimension of time_step
-  # This step is required to avoid issues when RNN output sequence is shorter
-  # than the label length.
-  inputs = tf.pad(
-      inputs,
-      [[0, 0], [padding[0], padding[0]], [padding[1], padding[1]], [0, 0]])
-  inputs = tf.keras.layers.Conv2D(
-      filters=filters, kernel_size=kernel_size, strides=strides,
-      padding="valid", use_bias=False, activation=tf.nn.relu6,
-      name="cnn_{}".format(layer_id))(inputs)
-  return batch_norm(inputs, training)
+    Returns:
+        tensor output from the current layer.
+    """
+    # Perform symmetric padding on the feature dimension of time_step
+    # This step is required to avoid issues when RNN output sequence is shorter
+    # than the label length.
+    inputs = tf.pad(
+        inputs,
+        [[0, 0], [padding[0], padding[0]], [padding[1], padding[1]], [0, 0]])
+    inputs = tf.keras.layers.Conv2D(
+        filters=filters, kernel_size=kernel_size, strides=strides,
+        padding="valid", use_bias=False, activation=tf.nn.relu6,
+        name="cnn_{}".format(layer_id))(inputs)
+    return batch_norm(inputs, training)
 
 
 def _rnn_layer(inputs, rnn_cell, rnn_hidden_size, layer_id, is_batch_norm,
                is_bidirectional, training):
-  """Defines a batch normalization + rnn layer.
-
-  Args:
-    inputs: input tensors for the current layer.
-    rnn_cell: RNN cell instance to use.
-    rnn_hidden_size: an integer for the dimensionality of the rnn output space.
-    layer_id: an integer for the index of current layer.
-    is_batch_norm: a boolean specifying whether to perform batch normalization
-      on input states.
-    is_bidirectional: a boolean specifying whether the rnn layer is
-      bi-directional.
-    training: a boolean to indicate which stage we are in (training/eval).
-
-  Returns:
-    tensor output for the current layer.
-  """
-  if is_batch_norm:
-    inputs = batch_norm(inputs, training)
-
-  if is_bidirectional:
-    rnn_outputs = tf.keras.layers.Bidirectional(
-        tf.keras.layers.RNN(rnn_cell(rnn_hidden_size),
-                            return_sequences=True))(inputs)
-  else:
-    rnn_outputs = tf.keras.layers.RNN(
-        rnn_cell(rnn_hidden_size), return_sequences=True)(inputs)
-
-  return rnn_outputs
-
-class DeepSpeech2(object):
-  """Define DeepSpeech2 model."""
-
-  def __init__(self, num_rnn_layers, rnn_type, is_bidirectional,
-               rnn_hidden_size, num_classes, use_bias):
-    """Initialize DeepSpeech2 model.
+    """Defines a batch normalization + rnn layer.
 
     Args:
-      num_rnn_layers: an integer, the number of rnn layers. By default, it's 5.
-      rnn_type: a string, one of the supported rnn cells: gru, rnn and lstm.
-      is_bidirectional: a boolean to indicate if the rnn layer is bidirectional.
-      rnn_hidden_size: an integer for the number of hidden states in each unit.
-      num_classes: an integer, the number of output classes/labels.
-      use_bias: a boolean specifying whether to use bias in the last fc layer.
+        inputs: input tensors for the current layer.
+        rnn_cell: RNN cell instance to use.
+        rnn_hidden_size: an integer for the dimensionality of the rnn output space.
+        layer_id: an integer for the index of current layer.
+        is_batch_norm: a boolean specifying whether to perform batch normalization
+        on input states.
+        is_bidirectional: a boolean specifying whether the rnn layer is
+        bi-directional.
+        training: a boolean to indicate which stage we are in (training/eval).
+
+    Returns:
+        tensor output for the current layer.
     """
-    self.num_rnn_layers = num_rnn_layers
-    self.rnn_type = rnn_type
-    self.is_bidirectional = is_bidirectional
-    self.rnn_hidden_size = rnn_hidden_size
-    self.num_classes = num_classes
-    self.use_bias = use_bias
+    if is_batch_norm:
+        inputs = batch_norm(inputs, training)
 
-  def __call__(self, inputs, training):
-    # Two cnn layers.
-    inputs = _conv_bn_layer(
-        inputs, padding=(20, 5), filters=_CONV_FILTERS, kernel_size=(41, 11),
-        strides=(2, 2), layer_id=1, training=training)
+    if is_bidirectional:
+        rnn_outputs = tf.keras.layers.Bidirectional(
+            tf.keras.layers.RNN(rnn_cell(rnn_hidden_size),
+                                return_sequences=True))(inputs)
+    else:
+        rnn_outputs = tf.keras.layers.RNN(
+            rnn_cell(rnn_hidden_size), return_sequences=True)(inputs)
 
-    inputs = _conv_bn_layer(
-        inputs, padding=(10, 5), filters=_CONV_FILTERS, kernel_size=(21, 11),
-        strides=(2, 1), layer_id=2, training=training)
+    return rnn_outputs
 
-    # output of conv_layer2 with the shape of
+class DeepSpeech2(object):
+    """Define DeepSpeech2 model."""
+
+    def __init__(self, num_rnn_layers, rnn_type, is_bidirectional,
+                rnn_hidden_size, num_classes, use_bias):
+        """Initialize DeepSpeech2 model.
+
+        Args:
+        num_rnn_layers: an integer, the number of rnn layers. By default, it's 5.
+        rnn_type: a string, one of the supported rnn cells: gru, rnn and lstm.
+        is_bidirectional: a boolean to indicate if the rnn layer is bidirectional.
+        rnn_hidden_size: an integer for the number of hidden states in each unit.
+        num_classes: an integer, the number of output classes/labels.
+        use_bias: a boolean specifying whether to use bias in the last fc layer.
+        """
+        self.num_rnn_layers = num_rnn_layers
+        self.rnn_type = rnn_type
+        self.is_bidirectional = is_bidirectional
+        self.rnn_hidden_size = rnn_hidden_size
+        self.num_classes = num_classes
+        self.use_bias = use_bias
+
+    def __call__(self, inputs, training):
+        # Two cnn layers.
+        inputs = _conv_bn_layer(
+            inputs, padding=(20, 5), filters=_CONV_FILTERS, kernel_size=(41, 11),
+            strides=(2, 2), layer_id=1, training=training)
+
+        inputs = _conv_bn_layer(
+            inputs, padding=(10, 5), filters=_CONV_FILTERS, kernel_size=(21, 11),
+            strides=(2, 1), layer_id=2, training=training)
+
+        # output of conv_layer2 with the shape of
+        # [batch_size (N), times (T), features (F), channels (C)].
+        # Convert the conv output to rnn input.
+        batch_size = tf.shape(inputs)[0]
+        feat_size = inputs.get_shape().as_list()[2]
+        inputs = tf.reshape(
+            inputs,
+            [batch_size, -1, feat_size * _CONV_FILTERS])
+
+        # RNN layers.
+        rnn_cell = SUPPORTED_RNNS[self.rnn_type]
+        for layer_counter in xrange(self.num_rnn_layers):
+            # No batch normalization on the first layer.
+            is_batch_norm = (layer_counter != 0)
+            inputs = _rnn_layer(
+                inputs, rnn_cell, self.rnn_hidden_size, layer_counter + 1,
+                is_batch_norm, self.is_bidirectional, training)
+
+        # FC layer with batch norm.
+        inputs = batch_norm(inputs, training)
+        logits = tf.keras.layers.Dense(
+            self.num_classes, use_bias=self.use_bias, activation="softmax")(inputs)
+
+        return logits
+
+def model_keras(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional,
+                rnn_hidden_size, use_bias):
+    """Define DeepSpeech2 model using Keras Functional API.
+
+    Args:
+        input_dim: the dimensions of the input tensor
+        num_classes: an integer, the number of output classes/labels.
+        num_rnn_layers: an integer, the number of rnn layers. By default, it's 5.
+        rnn_type: a string, one of the supported rnn cells: gru, rnn and lstm.
+        is_bidirectional: a boolean to indicate if the rnn layer is bidirectional.
+        rnn_hidden_size: an integer for the number of hidden states in each unit.
+        use_bias: a boolean specifying whether to use bias in the last fc layer.
+    """
+    padding_conv_1 = (20, 5)
+    padding_conv_2 = (10, 5)
+
+    # Input layer
+    input_ = tf.keras.layers.Input((None, input_dim), name="input")
+
+    # Padding layer
+    # Perform symmetric padding on the feature dimension of time_step
+    # This step is required to avoid issues when RNN output sequence is shorter than the label length.
+    x = tf.keras.layers.ZeroPadding2D(padding=padding_conv_1)(x)
+
+    # 2-D CNN layer
+    x = tf.keras.layers.Conv2D(
+        filters=_CONV_FILTERS, kernel_size=[41, 11], strides=[2, 1],
+        padding="valid", use_bias=False, activation=tf.nn.relu6,
+        name="conv_1")(input_)
+
+    # Batch normalisation
+    # During inference (i.e. when using evaluate() or predict() or when calling the layer/model with the argument training=False)
+    # During training (i.e. when using fit() or when calling the layer/model with the argument training=True)
+    x = tf.keras.layers.BatchNormalization(
+        momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+
+    # Padding layer
+    # Perform symmetric padding on the feature dimension of time_step
+    # This step is required to avoid issues when RNN output sequence is shorter than the label length.   
+    x = tf.keras.layers.ZeroPadding2D(padding=padding_conv_2)(x)
+
+    # 2-D CNN layer
+    x = tf.keras.layers.Conv2D(
+        filters=_CONV_FILTERS, kernel_size=[21, 11], strides=[2, 1],
+        padding="valid", use_bias=False, activation=tf.nn.relu6,
+        name="conv_2")(x)
+
+    # Batch normalisation
+    x = tf.keras.layers.BatchNormalization(
+        momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+
+    # Output of 2nd conv layer with the shape of
     # [batch_size (N), times (T), features (F), channels (C)].
     # Convert the conv output to rnn input.
-    batch_size = tf.shape(inputs)[0]
-    feat_size = inputs.get_shape().as_list()[2]
-    inputs = tf.reshape(
-        inputs,
+    batch_size = tf.shape(x)[0]
+    feat_size = x.get_shape().as_list()[2]
+    x = tf.reshape(
+        x,
         [batch_size, -1, feat_size * _CONV_FILTERS])
 
-    # RNN layers.
-    rnn_cell = SUPPORTED_RNNS[self.rnn_type]
-    for layer_counter in xrange(self.num_rnn_layers):
-      # No batch normalization on the first layer.
-      is_batch_norm = (layer_counter != 0)
-      inputs = _rnn_layer(
-          inputs, rnn_cell, self.rnn_hidden_size, layer_counter + 1,
-          is_batch_norm, self.is_bidirectional, training)
+    # RNN layers
+    rnn_cell = SUPPORTED_RNNS[rnn_type]
+    for layer_counter in xrange(num_rnn_layers):
+        # No batch normalization on the first layer.
+        if (layer_counter != 0):
+            x = tf.keras.layers.BatchNormalization(
+                momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
 
-    # FC layer with batch norm.
-    inputs = batch_norm(inputs, training)
-    logits = tf.keras.layers.Dense(
-        self.num_classes, use_bias=self.use_bias, activation="softmax")(inputs)
+        if is_bidirectional:
+            x = tf.keras.layers.Bidirectional(
+                tf.keras.layers.RNN(rnn_cell(rnn_hidden_size),
+                                return_sequences=True,
+                                name=f"rnn_{layer_counter}"))(x)
+        else:
+            x = tf.keras.layers.RNN(
+                rnn_cell(rnn_hidden_size), 
+                    return_sequences=True,
+                    name=f"rnn_{layer_counter}")(x)
 
-    return logits
+    # Output layer: FC layer with batch norm
+    x = tf.keras.layers.BatchNormalization(
+            momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+   
+    output_ = tf.keras.layers.Dense(
+        num_classes, use_bias=use_bias, activation="softmax")(x)
 
+    # The model
+    model = tf.keras.Model(
+        inputs=[input_], 
+        outputs=[output_], 
+        name="DeepSpeech2_KerasModel")
+
+    return model
