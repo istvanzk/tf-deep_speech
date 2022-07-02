@@ -300,3 +300,46 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
     # Prefetch to improve speed of input pipeline.
     dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return dataset
+
+
+# Based on: https://keras.io/examples/audio/ctc_asr/
+def plot_spectrogram(deep_speech_dataset, entry_idx):
+    """Visualize an example in our dataset, including the audio clip, the spectrogram and the corresponding label.
+    
+    Args:
+        deep_speech_dataset: a DeepSpeechDataset data set
+        entry_idx: the entry index in deep_speech_dataset.entries to plot
+
+    Returns:
+        Figure/plot
+    
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    
+    # Dataset properties
+    data_entries = deep_speech_dataset.entries
+    audio_featurizer = deep_speech_dataset.audio_featurizer
+    feature_normalize = deep_speech_dataset.config.audio_config.normalize
+
+    fig = plt.figure(figsize=(8, 5))
+    for audio_file, _, transcript in data_entries[entry_idx]:
+        spectrogram = _preprocess_audio(
+                    audio_file, audio_featurizer, feature_normalize)
+
+        # Spectrogram
+        ax = plt.subplot(2, 1, 1)
+        ax.imshow(spectrogram, vmax=1)
+        ax.set_title(transcript)
+        ax.axis("off")
+        
+        # Wav
+        audio, _ = tf.audio.decode_wav(audio_file)
+        audio = audio.numpy()
+        ax = plt.subplot(2, 1, 2)
+        plt.plot(audio)
+        ax.set_title("Signal Wave")
+        ax.set_xlim(0, len(audio))
+        #display.display(display.Audio(np.transpose(audio), rate=16000))
+        
+    plt.show()
