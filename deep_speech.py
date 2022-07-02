@@ -130,13 +130,17 @@ def evaluate_model(estimator, speech_labels, entries, input_fn_eval):
 
 def model_fn(features, labels, mode, params):
     """Define model function for deep speech model.
+    Uses tf.estimator.
+    
+    NOTE: Estimators run v1.Session-style code which is more difficult to write correctly, 
+    and can behave unexpectedly, especially when combined with TF 2 code.
 
     Args:
         features: a dictionary of input_data features. It includes the data
-        input_length, label_length and the spectrogram features.
+            input_length, label_length and the spectrogram features.
         labels: a list of labels for the input data.
         mode: current estimator mode; should be one of
-        `tf.estimator.ModeKeys.TRAIN`, `EVALUATE`, `PREDICT`.
+            `tf.estimator.ModeKeys.TRAIN`, `EVALUATE`, `PREDICT`.
         params: a dict of hyper parameters to be passed to model_fn.
 
     Returns:
@@ -177,6 +181,7 @@ def model_fn(features, labels, mode, params):
     global_step = tf.compat.v1.train.get_or_create_global_step()
     minimize_op = optimizer.minimize(loss, global_step=global_step)
     update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
+
     # Create the train_op that groups both minimize_ops and update_ops
     train_op = tf.group(minimize_op, update_ops)
 
@@ -234,17 +239,23 @@ def per_device_batch_size(batch_size, num_gpus):
 def run_deep_speech(_):
     """Run deep speech training and eval loop."""
     tf.compat.v1.set_random_seed(flags_obj.seed)
+
     # Data preprocessing
     logging.info("Data preprocessing...")
     train_speech_dataset = generate_dataset(flags_obj.train_data_dir)
     eval_speech_dataset = generate_dataset(flags_obj.eval_data_dir)
 
-    # Number of label classes. Label string is "[a-z]' -"
+    # Number of label classes. Label string is generated from the --vocabulary_file file
     num_classes = len(train_speech_dataset.speech_labels)
 
-    # Use distribution strategy for multi-gpu training
+
+    # Use distribution strategy for multi-gpu training (when available)
     num_gpus = flags_core.get_num_gpus(flags_obj)
     distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus)
+
+    # Warning: 
+    # Estimators run v1.Session-style code which is more difficult to write correctly, 
+    # and can behave unexpectedly, especially when combined with TF 2 code.
     run_config = tf.estimator.RunConfig(
         train_distribute=distribution_strategy)
 
@@ -309,6 +320,167 @@ def run_deep_speech(_):
             flags_obj.wer_threshold, eval_results[_WER_KEY]):
                 break
 
+
+def evaluate_model_keras(model):
+    """Evaluate the model performance using WER anc CER as metrics.
+
+    The evaluation dataset indicated by flags_obj.eval_data_dir is used.
+
+    Args:
+        model: Keras model to evaluate.
+
+    Returns:
+        Dictionary with evaluation results:
+            'WER': Word Error Rate
+            'CER': Character Error Rate
+    """
+    # Input dataset
+    eval_speech_dataset = generate_dataset(flags_obj.eval_data_dir)
+    speech_labels       = eval_speech_dataset.speech_labels
+    entries             = eval_speech_dataset.entries
+
+    # Input dataset (generator function)
+    input_dataset_eval = dataset.input_fn(flags_obj.batch_size, eval_speech_dataset)
+
+    # Evaluate
+    predictions = model.predict(
+        input_dataset_eval,
+    )
+
+    # Get probabilities of each predicted class
+    probs = [pred["probabilities"] for pred in predictions]
+
+    num_of_examples = len(probs)
+    targets = [entry[2] for entry in entries]  # The ground truth transcript
+
+    total_wer, total_cer = 0, 0
+    greedy_decoder = decoder.DeepSpeechDecoder(speech_labels)
+    for i in range(num_of_examples):
+        # Decode string.
+        decoded_str = greedy_decoder.decode(probs[i])
+        # Compute CER.
+        total_cer += greedy_decoder.cer(decoded_str, targets[i]) / float(
+            len(targets[i]))
+        # Compute WER.
+        total_wer += greedy_decoder.wer(decoded_str, targets[i]) / float(
+            len(targets[i].split()))
+
+    # Get mean value
+    total_cer /= num_of_examples
+    total_wer /= num_of_examples
+
+    eval_results = {
+        _WER_KEY: total_wer,
+        _CER_KEY: total_cer,
+    }
+
+    return eval_results
+
+def run_deep_speech_keras(_):
+    """Run DeepSpeech2 training and evaluation loop (TF2/Keras)."""
+    
+    # Initialise random seed 
+    tf.random.set_seed(flags_obj.seed)
+
+    # Data preprocessing
+    logging.info("Data preprocessing...")
+    train_speech_dataset = generate_dataset(flags_obj.train_data_dir)
+    #train_speech_dataset , valid_speech_dataset = generate_dataset(flags_obj.train_data_dir)
+    
+    per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
+
+    # Number of label classes. Label string is generated from the --vocabulary_file file
+    num_classes = len(train_speech_dataset.speech_labels)
+
+    # Input datasets (generator function)
+    input_dataset_train = dataset.input_fn(per_replica_batch_size, train_speech_dataset)
+
+    # TODO: Check this
+    features = input_dataset_train[0]["features"]
+    input_length = input_dataset_train[0]["input_length"]
+    label_length = input_dataset_train[0]["label_length"]
+
+    #input_dataset_valid = dataset.input_fn(per_replica_batch_size, valid_speech_dataset)
+  
+    def CTCLoss(labels, logits):
+        # Compute CTC loss
+        ctc_input_length = compute_length_after_conv(
+            tf.shape(features)[1], tf.shape(logits)[1], input_length)
+
+        return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
+            labels, logits, ctc_input_length, label_length))
+
+    # Use distribution strategy for multi-gpu training (when available)
+    logging.info("Model generation and distribution...")
+
+    num_gpus = flags_core.get_num_gpus(flags_obj)
+    distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus)
+
+    # See: https://www.tensorflow.org/tutorials/distribute/keras
+    with distribution_strategy.scope():
+        
+        # Model
+        model = deep_speech_model.model_karas(
+            (input_length, label_length),
+            num_classes, 
+            flags_obj.rnn_hidden_layers, flags_obj.rnn_type,
+            flags_obj.is_bidirectional, flags_obj.rnn_hidden_size,
+            flags_obj.use_bias
+        )
+
+        # Optimizer
+        optimizer = tf.keras.optimizers.AdamOptimizer(learning_rate=flags_obj.learning_rate)
+
+        # Compile the model
+        model.compile(optimizer=optimizer, loss=CTCLoss)
+
+    # Plot summary of the model
+    logging.info("Plot model summary...")
+
+    model.summary(line_length=110)
+
+    tf.keras.utils.plot_model(
+        model, 
+        to_file='model.png', 
+        show_shapes=True,
+        show_dtype=True,
+        show_layer_names=True,
+    )
+
+
+    # Callbacks for training
+    # 'EarlyStopping' to stop training when the model is not enhancing anymore
+    earlystopping_cb = tf.keras.callbacks.EarlyStopping(
+        patience=10, 
+        restore_best_weights=True,
+    )
+    # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
+    model_save_filename = flags_obj.model_dir + "model.h5"
+    mdlcheckpoint_cb = tf.keras.callbacks.ModelCheckpoint(
+        model_save_filename, 
+        monitor="val_accuracy", 
+        save_best_only=True,
+    )
+
+    # Train/fit
+    logging.info("Starting to train...")
+
+    model.fit(
+        input_dataset_train,
+        validation_split = 0.2
+        epochs=flags_obj.train_epochs,
+        callbacks=[earlystopping_cb, mdlcheckpoint_cb],
+    )
+
+
+
+    # Evaluation
+    # TODO
+    logging.info("Starting to evaluate...")
+
+    eval_results = evaluate_model_keras(model)
+
+    # ...
 
 def define_deep_speech_flags():
     """Add flags for run_deep_speech."""
@@ -415,7 +587,9 @@ def define_deep_speech_flags():
 
 
 def main(_):
-    run_deep_speech(flags_obj)
+    #run_deep_speech(flags_obj)
+    run_deep_speech_keras(flags_obj)
+
 
 
 if __name__ == "__main__":
