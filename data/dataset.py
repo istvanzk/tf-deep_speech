@@ -156,13 +156,13 @@ def _preprocess_data(file_path):
 
 
 class DeepSpeechDataset(object):
-    """Dataset class for training/evaluation of DeepSpeech model."""
+    """Dataset class for training/validation/evaluation of DeepSpeech2 model."""
 
     def __init__(self, dataset_config):
         """Initialize the DeepSpeechDataset class.
 
         Args:
-        dataset_config: DatasetConfig object.
+            dataset_config: DatasetConfig object.
         """
         self.config = dataset_config
         # Instantiate audio feature extractor.
@@ -341,5 +341,5 @@ def plot_spectrogram(deep_speech_dataset, entry_idx):
         ax.set_title("Signal Wave")
         ax.set_xlim(0, len(audio))
         #display.display(display.Audio(np.transpose(audio), rate=16000))
-        
+
     plt.show()
