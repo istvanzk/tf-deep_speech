@@ -343,9 +343,14 @@ def evaluate_model_keras(model):
     input_dataset_eval = dataset.input_fn(flags_obj.batch_size, eval_speech_dataset)
 
     # Evaluate
-    predictions = model.predict(
-        input_dataset_eval,
+    logits = model.predict(
+        x=input_dataset_eval,
     )
+    predictions = {
+        "classes": tf.argmax(logits, axis=2),
+        "probabilities": logits,
+        "logits": logits
+    }
 
     # Get probabilities of each predicted class
     probs = [pred["probabilities"] for pred in predictions]
@@ -376,6 +381,27 @@ def evaluate_model_keras(model):
 
     return eval_results
 
+
+def CTCLoss(labels, logits):
+    """Compute CTC loss"""
+
+    batch_len = tf.cast(tf.shape(labels)[0], dtype="int64")
+    input_len = tf.cast(tf.shape(logits)[1], dtype="int64")
+    label_len = tf.cast(tf.shape(labels)[1], dtype="int64")
+
+    input_len = input_len * tf.ones(shape=(batch_len, 1), dtype="int64")
+    label_len = label_len * tf.ones(shape=(batch_len, 1), dtype="int64")        
+
+    #ctc_input_length = compute_length_after_conv(
+    #    tf.shape(features)[1], tf.shape(logits)[1], input_length)
+
+    #return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
+    #    labels, logits, ctc_input_length, label_length))
+
+    return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
+        labels, logits, input_len, label_len))
+
+
 def run_deep_speech_keras(_):
     """Run DeepSpeech2 training and evaluation loop (TF2/Keras)."""
     
@@ -385,7 +411,7 @@ def run_deep_speech_keras(_):
     # Data preprocessing
     logging.info("Data preprocessing...")
     train_speech_dataset = generate_dataset(flags_obj.train_data_dir)
-    #train_speech_dataset , valid_speech_dataset = generate_dataset(flags_obj.train_data_dir)
+    valid_speech_dataset = generate_dataset(flags_obj.valid_data_dir)
     
     per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
 
@@ -394,21 +420,12 @@ def run_deep_speech_keras(_):
 
     # Input datasets (generator function)
     input_dataset_train = dataset.input_fn(per_replica_batch_size, train_speech_dataset)
+    input_dataset_valid = dataset.input_fn(per_replica_batch_size, valid_speech_dataset)
 
-    # TODO: Check this
-    features = input_dataset_train[0]["features"]
-    input_length = input_dataset_train[0]["input_length"]
-    label_length = input_dataset_train[0]["label_length"]
-
-    #input_dataset_valid = dataset.input_fn(per_replica_batch_size, valid_speech_dataset)
-  
-    def CTCLoss(labels, logits):
-        # Compute CTC loss
-        ctc_input_length = compute_length_after_conv(
-            tf.shape(features)[1], tf.shape(logits)[1], input_length)
-
-        return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
-            labels, logits, ctc_input_length, label_length))
+    # Get one element from the input dataset
+    #features = input_dataset_train.take(1)[0]["features"]
+    input_length = input_dataset_train.take(1)[0]["input_length"]
+    #label_length = input_dataset_train.take(1)[0]["label_length"]
 
     # Use distribution strategy for multi-gpu training (when available)
     logging.info("Model generation and distribution...")
@@ -418,10 +435,10 @@ def run_deep_speech_keras(_):
 
     # See: https://www.tensorflow.org/tutorials/distribute/keras
     with distribution_strategy.scope():
-        
+
         # Model
         model = deep_speech_model.model_karas(
-            (input_length, label_length),
+            input_length,
             num_classes, 
             flags_obj.rnn_hidden_layers, flags_obj.rnn_type,
             flags_obj.is_bidirectional, flags_obj.rnn_hidden_size,
@@ -435,30 +452,32 @@ def run_deep_speech_keras(_):
         model.compile(optimizer=optimizer, loss=CTCLoss)
 
     # Plot summary of the model
-    logging.info("Plot model summary...")
+    if flags_obj.plot_model:
+        logging.info("Plot model summary...")
 
-    model.summary(line_length=110)
+        model.summary(line_length=110)
 
-    tf.keras.utils.plot_model(
-        model, 
-        to_file='model.png', 
-        show_shapes=True,
-        show_dtype=True,
-        show_layer_names=True,
-    )
+        tf.keras.utils.plot_model(
+            model, 
+            to_file=os.path.join(flags_obj.model_dir, "ds2_model.png"), 
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+        )
 
 
     # Callbacks for training
     # 'EarlyStopping' to stop training when the model is not enhancing anymore
     earlystopping_cb = tf.keras.callbacks.EarlyStopping(
+        monitor="val_loss",
         patience=10, 
         restore_best_weights=True,
     )
     # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-    model_save_filename = flags_obj.model_dir + "model.h5"
     mdlcheckpoint_cb = tf.keras.callbacks.ModelCheckpoint(
-        model_save_filename, 
+        filepath=os.path.join(flags_obj.model_dir, "kmodel.h5"), 
         monitor="val_accuracy", 
+        verbose=1,
         save_best_only=True,
     )
 
@@ -466,8 +485,8 @@ def run_deep_speech_keras(_):
     logging.info("Starting to train...")
 
     model.fit(
-        input_dataset_train,
-        validation_split = 0.2
+        x=input_dataset_train,
+        validation_data=input_dataset_valid,
         epochs=flags_obj.train_epochs,
         callbacks=[earlystopping_cb, mdlcheckpoint_cb],
     )
@@ -479,6 +498,8 @@ def run_deep_speech_keras(_):
     logging.info("Starting to evaluate...")
 
     eval_results = evaluate_model_keras(model)
+
+    logging.info(f"Evaluation result: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
 
     # ...
 
@@ -518,13 +539,19 @@ def define_deep_speech_flags():
 
     flags.DEFINE_string(
         name="train_data_dir",
-        default="/tmp/librispeech_data/test-clean/LibriSpeech/test-clean.csv",
+        default="/tmp/librispeech_data/train-clean/LibriSpeech/train-clean.csv",
         help=flags_core.help_wrap("The csv file path of train dataset."))
+
+    flags.DEFINE_string(
+        name="valid_data_dir",
+        default="/tmp/librispeech_data/dev-clean/LibriSpeech/dev-clean.csv",
+        help=flags_core.help_wrap("The csv file path of validation dataset."))
 
     flags.DEFINE_string(
         name="eval_data_dir",
         default="/tmp/librispeech_data/test-clean/LibriSpeech/test-clean.csv",
         help=flags_core.help_wrap("The csv file path of evaluation dataset."))
+
 
     flags.DEFINE_bool(
         name="sortagrad", default=True,
@@ -575,6 +602,10 @@ def define_deep_speech_flags():
     flags.DEFINE_float(
         name="learning_rate", default=5e-4,
         help=flags_core.help_wrap("The initial learning rate."))
+
+    flags.DEFINE_bool(
+        name = "plot_model", default=True,
+        help=flags_core.help_wrap("If model is to be shown, ploted and saved to ds2_model.png"))
 
     # Evaluation metrics threshold
     flags.DEFINE_float(
