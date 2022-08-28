@@ -197,13 +197,13 @@ def model_keras(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirection
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
     # This step is required to avoid issues when RNN output sequence is shorter than the label length.
-    x = tf.keras.layers.ZeroPadding2D(padding=padding_conv_1)(x)
+    x = tf.keras.layers.ZeroPadding2D(padding=padding_conv_1)(input_)
 
     # 2-D CNN layer
     x = tf.keras.layers.Conv2D(
         filters=_CONV_FILTERS, kernel_size=[41, 11], strides=[2, 1],
         padding="valid", use_bias=False, activation=tf.nn.relu6,
-        name="conv_1")(input_)
+        name="conv_1")(x)
 
     # Batch normalisation
     # During inference (i.e. when using evaluate() or predict() or when calling the layer/model with the argument training=False)
