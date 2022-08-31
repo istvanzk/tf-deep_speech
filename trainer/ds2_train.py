@@ -205,10 +205,10 @@ def run_deep_speech(_):
     input_dataset_test = dataset.input_fn(per_replica_batch_size, test_speech_dataset)
 
     # Get one element from the input dataset
-    dict_data = list(input_dataset_train.take(1).as_numpy_iterator())[0]
-    input_length = dict_data["input_length"]
-    #features = dict_data["features"]
-    #label_length = dict_data["label_length"]
+    dict_data_info = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
+    input_length = dict_data_info["input_length"]
+    #features = dict_data_info["features"]
+    #label_length = dict_data_info["label_length"]
 
     # Use distribution strategy for multi-gpu training (when available)
     logging.info("Model generation and distribution...")
