@@ -14,15 +14,15 @@
 #  limitations under the License.
 # ==============================================================================
 """Generate tf.data.Dataset object for deep speech training/evaluation."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+#from __future__ import absolute_import
+#from __future__ import division
+#from __future__ import print_function
 
 import math
 import random
 # pylint: disable=g-bad-import-order
 import numpy as np
-from six.moves import xrange  # pylint: disable=redefined-builtin
+#from six.moves import xrange  # pylint: disable=redefined-builtin
 import soundfile
 import tensorflow as tf
 from absl import logging
@@ -204,7 +204,7 @@ def batch_wise_dataset_shuffle(entries, epoch_index, sortagrad, batch_size):
     else:
         # Shuffle entries batch-wise.
         max_buckets = int(math.floor(len(entries) / batch_size))
-        total_buckets = [i for i in xrange(max_buckets)]
+        total_buckets = [i for i in range(max_buckets)]
         random.shuffle(total_buckets)
         shuffled_entries = []
         for i in total_buckets:
