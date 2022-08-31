@@ -5,10 +5,16 @@ This is a stand-alone fork for the Tensorflow [DeepSpeech2](https://github.com/t
 
 Development plans:
 
-- Updates to work with [tf-models-official](https://pypi.org/project/tf-models-official/) python package and with TF2.8
-- Updates to use [absl-py](https://abseil.io/docs/python/) python package
-- Updates to work with [Common Voice Corpus 2](https://commonvoice.mozilla.org/en/datasets) 
-- Make it work with [Rahsspy](https://github.com/rhasspy/rhasspy), as replacement for the [Mozilla DeepSpeech](https://github.com/mozilla/DeepSpeech)
+- [x] Updates to work with [tf-models-official](https://pypi.org/project/tf-models-official/) python package and with TF2.8
+- [x] Updates to use [absl-py](https://abseil.io/docs/python/) python package
+- [x] Updates to work with [Common Voice Corpus 2](https://commonvoice.mozilla.org/en/datasets) 
+- [x] Refactor code to use Keras Functional API
+- [x] Modularize to match customm training requirements on GC with Vertex AI
+- [ ] Local training test (Python 3.8+)
+- [ ] Local training test within GC docker image (gcloud ai custom-jobs local-run)
+- [ ] Custom training job on GC (Vertex AI, etc.)
+- [ ] Remove old code which uses tf.estimator and update ReadMe for the use of the new code which uses Keras Functional API
+- [ ] Make it work with [Rahsspy](https://github.com/rhasspy/rhasspy), as replacement for the [Mozilla DeepSpeech](https://github.com/mozilla/DeepSpeech)
 
 
 # Original ReadMe: DeepSpeech2 Model
