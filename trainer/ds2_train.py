@@ -205,9 +205,9 @@ def run_deep_speech(_):
     input_dataset_test = dataset.input_fn(per_replica_batch_size, test_speech_dataset)
 
     # Get one element from the input dataset
-    #features = input_dataset_train.take(1)[0]["features"]
-    input_length = input_dataset_train.take(1)[0]["input_length"]
-    #label_length = input_dataset_train.take(1)[0]["label_length"]
+    #features = input_dataset_train.take(1)["features"]
+    input_length = input_dataset_train.take(1)["input_length"]
+    #label_length = input_dataset_train.take(1)["label_length"]
 
     # Use distribution strategy for multi-gpu training (when available)
     logging.info("Model generation and distribution...")
