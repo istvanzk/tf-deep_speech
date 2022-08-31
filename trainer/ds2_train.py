@@ -95,7 +95,7 @@ def per_device_batch_size(batch_size, num_gpus):
 def evaluate_model(model):
     """Evaluate the model performance using WER anc CER as metrics.
 
-    The evaluation dataset indicated by flags_obj.eval_data_dir is used.
+    The evaluation dataset indicated by flags_obj.test_data_dir is used.
 
     Args:
         model: Keras model to evaluate.
@@ -192,7 +192,7 @@ def run_deep_speech(_):
     # Data preprocessing
     logging.info("Data preprocessing...")
     train_speech_dataset = generate_dataset(flags_obj.train_data_dir)
-    valid_speech_dataset = generate_dataset(flags_obj.valid_data_dir)
+    test_speech_dataset = generate_dataset(flags_obj.test_data_dir)
     
     per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
 
@@ -201,7 +201,7 @@ def run_deep_speech(_):
 
     # Input datasets (generator function)
     input_dataset_train = dataset.input_fn(per_replica_batch_size, train_speech_dataset)
-    input_dataset_valid = dataset.input_fn(per_replica_batch_size, valid_speech_dataset)
+    input_dataset_test = dataset.input_fn(per_replica_batch_size, test_speech_dataset)
 
     # Get one element from the input dataset
     #features = input_dataset_train.take(1)[0]["features"]
@@ -271,7 +271,7 @@ def run_deep_speech(_):
 
     model.fit(
         x=input_dataset_train,
-        validation_data=input_dataset_valid,
+        validation_data=input_dataset_test,
         epochs=flags_obj.train_epochs,
         callbacks=[earlystopping_cb, mdlcheckpoint_cb],
     )
@@ -292,7 +292,7 @@ def define_deep_speech_flags():
     """Add flags for run_deep_speech."""
     # Add common flags
     flags_core.define_base(
-        data_dir=False,  # we use train_data_dir and eval_data_dir instead
+        data_dir=False,  # we use train_data_dir and test_data_dir instead
         export_dir=True,
         train_epochs=True,
         hooks=True,
@@ -328,14 +328,14 @@ def define_deep_speech_flags():
         help=flags_core.help_wrap("The csv file path of train dataset."))
 
     flags.DEFINE_string(
-        name="valid_data_dir",
+        name="eval_data_dir",
         default="/tmp/librispeech_data/dev-clean/LibriSpeech/dev-clean.csv",
-        help=flags_core.help_wrap("The csv file path of validation dataset."))
+        help=flags_core.help_wrap("The csv file path of evaluation dataset."))
 
     flags.DEFINE_string(
-        name="eval_data_dir",
+        name="test_data_dir",
         default="/tmp/librispeech_data/test-clean/LibriSpeech/test-clean.csv",
-        help=flags_core.help_wrap("The csv file path of evaluation dataset."))
+        help=flags_core.help_wrap("The csv file path of test dataset."))
 
 
     flags.DEFINE_bool(
