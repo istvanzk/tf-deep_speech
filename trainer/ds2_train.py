@@ -14,9 +14,9 @@
 # limitations under the License.
 # ==============================================================================
 """Main entry to train and evaluate DeepSpeech model."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+#from __future__ import absolute_import
+#from __future__ import division
+#from __future__ import print_function
 
 import os
 # Disable all GPUs. This prevents errors caused by all workers trying to use the same GPU. 
@@ -35,7 +35,7 @@ import tensorflow as tf
 
 import data.dataset as dataset
 import decoder
-import model.deep_speech_model as deep_speech_model
+import model.keras_model as deep_speech_model
 from official.utils.flags import core as flags_core
 from official.common import distribute_utils as distribution_utils
 from official.utils.misc import model_helpers
@@ -92,7 +92,7 @@ def per_device_batch_size(batch_size, num_gpus):
         raise ValueError(err)
     return int(batch_size / num_gpus)
 
-def evaluate_model_keras(model):
+def evaluate_model(model):
     """Evaluate the model performance using WER anc CER as metrics.
 
     The evaluation dataset indicated by flags_obj.eval_data_dir is used.
@@ -183,7 +183,7 @@ def CTCLoss(labels, logits):
         labels, logits, input_len, label_len))
 
 
-def run_deep_speech_keras(_):
+def run_deep_speech(_):
     """Run DeepSpeech2 training and evaluation loop (TF2/Keras)."""
     
     # Initialise random seed 
@@ -282,7 +282,7 @@ def run_deep_speech_keras(_):
     # TODO
     logging.info("Starting to evaluate...")
 
-    eval_results = evaluate_model_keras(model)
+    eval_results = evaluate_model(model)
 
     logging.info(f"Evaluation result: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
 
@@ -403,7 +403,7 @@ def define_deep_speech_flags():
 
 
 def main(_):
-    run_deep_speech_keras(flags_obj)
+    run_deep_speech(flags_obj)
 
 
 if __name__ == "__main__":
