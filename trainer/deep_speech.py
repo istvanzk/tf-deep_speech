@@ -31,12 +31,12 @@ from absl import app as absl_app
 from absl import flags
 from absl import logging
 import tensorflow as tf
-#tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # pylint: enable=g-bad-import-order
 
 import data.dataset as dataset
 import decoder
-import deep_speech_model
+import model.deep_speech_model as deep_speech_model
 from official.utils.flags import core as flags_core
 from official.common import distribute_utils as distribution_utils
 from official.utils.misc import model_helpers
@@ -320,203 +320,6 @@ def run_deep_speech(_):
             flags_obj.wer_threshold, eval_results[_WER_KEY]):
                 break
 
-
-def evaluate_model_keras(model):
-    """Evaluate the model performance using WER anc CER as metrics.
-
-    The evaluation dataset indicated by flags_obj.eval_data_dir is used.
-
-    Args:
-        model: Keras model to evaluate.
-
-    Returns:
-        Dictionary with evaluation results:
-            'WER': Word Error Rate
-            'CER': Character Error Rate
-    """
-    # Input dataset
-    eval_speech_dataset = generate_dataset(flags_obj.eval_data_dir)
-    speech_labels       = eval_speech_dataset.speech_labels
-    entries             = eval_speech_dataset.entries
-
-    # Input dataset (generator function)
-    input_dataset_eval = dataset.input_fn(flags_obj.batch_size, eval_speech_dataset)
-
-    # Evaluate
-    probs = model.predict(
-        x=input_dataset_eval,
-    )
-
-    num_of_examples = len(probs)
-    targets = [entry[2] for entry in entries]  # The ground truth transcript
-
-    total_wer, total_cer = 0, 0
-    greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=28)
-    for i in range(num_of_examples):
-        # Decode string.
-        decoded_str = greedy_decoder.decode(probs[i])
-        # Compute CER.
-        total_cer += greedy_decoder.cer(decoded_str, targets[i]) / float(
-            len(targets[i]))
-        # Compute WER.
-        total_wer += greedy_decoder.wer(decoded_str, targets[i]) / float(
-            len(targets[i].split()))
-
-    # Get mean value
-    total_cer /= num_of_examples
-    total_wer /= num_of_examples
-
-    eval_results = {
-        _WER_KEY: total_wer,
-        _CER_KEY: total_cer,
-    }
-
-    return eval_results
-
-# def WER(labels, logits):
-#     """Compute WER metric"""
-
-#     num_of_examples = len(logits)
-#     total_wer = 0
-#     greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=28)
-#     for i in range(num_of_examples):
-#         # Decode string.
-#         decoded_str = greedy_decoder.decode(logits[i])
-#         # Compute WER.
-#         total_wer += greedy_decoder.wer(decoded_str, labels[i]) / float(
-#             len(labels[i].split()))
-
-#     # Get mean value
-#     total_wer /= num_of_examples
-
-#     return total_wer
-
-
-def CTCLoss(labels, logits):
-    """Compute CTC loss"""
-
-    batch_len = tf.cast(tf.shape(labels)[0], dtype="int64")
-    input_len = tf.cast(tf.shape(logits)[1], dtype="int64")
-    label_len = tf.cast(tf.shape(labels)[1], dtype="int64")
-
-    input_len = input_len * tf.ones(shape=(batch_len, 1), dtype="int64")
-    label_len = label_len * tf.ones(shape=(batch_len, 1), dtype="int64")        
-
-    #ctc_input_length = compute_length_after_conv(
-    #    tf.shape(features)[1], tf.shape(logits)[1], input_length)
-
-    #return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
-    #    labels, logits, ctc_input_length, label_length))
-
-    return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
-        labels, logits, input_len, label_len))
-
-
-def run_deep_speech_keras(_):
-    """Run DeepSpeech2 training and evaluation loop (TF2/Keras)."""
-    
-    # Initialise random seed 
-    tf.random.set_seed(flags_obj.seed)
-
-    # Data preprocessing
-    logging.info("Data preprocessing...")
-    train_speech_dataset = generate_dataset(flags_obj.train_data_dir)
-    valid_speech_dataset = generate_dataset(flags_obj.valid_data_dir)
-    
-    per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
-
-    # Number of label classes. Label string is generated from the --vocabulary_file file
-    num_classes = len(train_speech_dataset.speech_labels)
-
-    # Input datasets (generator function)
-    input_dataset_train = dataset.input_fn(per_replica_batch_size, train_speech_dataset)
-    input_dataset_valid = dataset.input_fn(per_replica_batch_size, valid_speech_dataset)
-
-    # Get one element from the input dataset
-    #features = input_dataset_train.take(1)[0]["features"]
-    input_length = input_dataset_train.take(1)[0]["input_length"]
-    #label_length = input_dataset_train.take(1)[0]["label_length"]
-
-    # Use distribution strategy for multi-gpu training (when available)
-    logging.info("Model generation and distribution...")
-
-    num_gpus = flags_core.get_num_gpus(flags_obj)
-    distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus)
-
-    # See: https://www.tensorflow.org/tutorials/distribute/keras
-    with distribution_strategy.scope():
-
-        # Model
-        model = deep_speech_model.model_karas(
-            input_length,
-            num_classes, 
-            flags_obj.rnn_hidden_layers, flags_obj.rnn_type,
-            flags_obj.is_bidirectional, flags_obj.rnn_hidden_size,
-            flags_obj.use_bias
-        )
-
-        # Optimizer
-        optimizer = tf.keras.optimizers.AdamOptimizer(learning_rate=flags_obj.learning_rate)
-
-        # Compile the model
-        model.compile(
-            optimizer=optimizer, 
-            loss=CTCLoss,
-            metrics=['accuracy'],
-        )
-
-    # Plot summary of the model
-    if flags_obj.plot_model:
-        logging.info("Plot model summary...")
-
-        model.summary(line_length=110)
-
-        tf.keras.utils.plot_model(
-            model, 
-            to_file=os.path.join(flags_obj.model_dir, "ds2_model.png"), 
-            show_shapes=True,
-            show_dtype=True,
-            show_layer_names=True,
-        )
-
-
-    # Callbacks for training
-    # 'EarlyStopping' to stop training when the model is not enhancing anymore
-    earlystopping_cb = tf.keras.callbacks.EarlyStopping(
-        monitor="val_loss",
-        patience=10, 
-        restore_best_weights=True,
-    )
-    # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-    mdlcheckpoint_cb = tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(flags_obj.model_dir, "kmodel.h5"), 
-        monitor="val_accuracy", 
-        verbose=1,
-        save_best_only=True,
-    )
-
-    # Train/fit
-    logging.info("Starting to train...")
-
-    model.fit(
-        x=input_dataset_train,
-        validation_data=input_dataset_valid,
-        epochs=flags_obj.train_epochs,
-        callbacks=[earlystopping_cb, mdlcheckpoint_cb],
-    )
-
-
-
-    # Evaluation
-    # TODO
-    logging.info("Starting to evaluate...")
-
-    eval_results = evaluate_model_keras(model)
-
-    logging.info(f"Evaluation result: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
-
-    # ...
-
 def define_deep_speech_flags():
     """Add flags for run_deep_speech."""
     # Add common flags
@@ -632,10 +435,7 @@ def define_deep_speech_flags():
 
 
 def main(_):
-    #run_deep_speech(flags_obj)
-    run_deep_speech_keras(flags_obj)
-
-
+    run_deep_speech(flags_obj)
 
 if __name__ == "__main__":
     logging.set_verbosity(logging.INFO)
