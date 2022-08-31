@@ -343,23 +343,15 @@ def evaluate_model_keras(model):
     input_dataset_eval = dataset.input_fn(flags_obj.batch_size, eval_speech_dataset)
 
     # Evaluate
-    logits = model.predict(
+    probs = model.predict(
         x=input_dataset_eval,
     )
-    predictions = {
-        "classes": tf.argmax(logits, axis=2),
-        "probabilities": logits,
-        "logits": logits
-    }
-
-    # Get probabilities of each predicted class
-    probs = [pred["probabilities"] for pred in predictions]
 
     num_of_examples = len(probs)
     targets = [entry[2] for entry in entries]  # The ground truth transcript
 
     total_wer, total_cer = 0, 0
-    greedy_decoder = decoder.DeepSpeechDecoder(speech_labels)
+    greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=28)
     for i in range(num_of_examples):
         # Decode string.
         decoded_str = greedy_decoder.decode(probs[i])
@@ -380,6 +372,24 @@ def evaluate_model_keras(model):
     }
 
     return eval_results
+
+# def WER(labels, logits):
+#     """Compute WER metric"""
+
+#     num_of_examples = len(logits)
+#     total_wer = 0
+#     greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=28)
+#     for i in range(num_of_examples):
+#         # Decode string.
+#         decoded_str = greedy_decoder.decode(logits[i])
+#         # Compute WER.
+#         total_wer += greedy_decoder.wer(decoded_str, labels[i]) / float(
+#             len(labels[i].split()))
+
+#     # Get mean value
+#     total_wer /= num_of_examples
+
+#     return total_wer
 
 
 def CTCLoss(labels, logits):
@@ -449,7 +459,11 @@ def run_deep_speech_keras(_):
         optimizer = tf.keras.optimizers.AdamOptimizer(learning_rate=flags_obj.learning_rate)
 
         # Compile the model
-        model.compile(optimizer=optimizer, loss=CTCLoss)
+        model.compile(
+            optimizer=optimizer, 
+            loss=CTCLoss,
+            metrics=['accuracy'],
+        )
 
     # Plot summary of the model
     if flags_obj.plot_model:
