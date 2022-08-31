@@ -194,6 +194,7 @@ def run_deep_speech(_):
     train_speech_dataset = generate_dataset(flags_obj.train_data_dir)
     test_speech_dataset = generate_dataset(flags_obj.test_data_dir)
     
+    num_gpus = flags_core.get_num_gpus(flags_obj)   
     per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
 
     # Number of label classes. Label string is generated from the --vocabulary_file file
@@ -211,7 +212,6 @@ def run_deep_speech(_):
     # Use distribution strategy for multi-gpu training (when available)
     logging.info("Model generation and distribution...")
 
-    num_gpus = flags_core.get_num_gpus(flags_obj)
     distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus)
 
     # See: https://www.tensorflow.org/tutorials/distribute/keras
