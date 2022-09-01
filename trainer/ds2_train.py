@@ -244,13 +244,13 @@ def run_deep_speech(_):
 
         model.summary(line_length=110)
 
-        tf.keras.utils.plot_model(
-            model, 
-            to_file=os.path.join(flags_obj.model_dir, "ds2_model.png"), 
-            show_shapes=True,
-            show_dtype=True,
-            show_layer_names=True,
-        )
+        # tf.keras.utils.plot_model(
+        #     model, 
+        #     to_file=os.path.join(flags_obj.model_dir, "ds2_model.png"), 
+        #     show_shapes=True,
+        #     show_dtype=True,
+        #     show_layer_names=True,
+        # )
 
 
     # Callbacks for training
