@@ -43,7 +43,7 @@ echo "Model training and evaluation..."
 start=`date +%s`
 
 log_file=log_`date +%Y-%m-%d`
-nohup python deep_speech.py --train_data_dir=$final_train_file --eval_data_dir=$final_eval_file --num_gpus=-1 --wer_threshold=0.23 --seed=1 >$log_file 2>&1&
+nohup python trainer/ds2_train.py --train_data_csv=$final_train_file --eval_data_csv=$final_eval_file --num_gpus=-1 --wer_threshold=0.23 --seed=1 >$log_file 2>&1&
 
 end=`date +%s`
 runtime=$((end-start))
