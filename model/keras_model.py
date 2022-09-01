@@ -34,7 +34,7 @@ _BATCH_NORM_DECAY = 0.997
 # Filters of convolution layer
 _CONV_FILTERS = 32
 
-def model_keras(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional,
+def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional,
                 rnn_hidden_size, use_bias):
     """Define DeepSpeech2 model using Keras Functional API.
 
