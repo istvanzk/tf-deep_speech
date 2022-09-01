@@ -54,7 +54,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     padding_conv_2 = (10, 5)
 
     # Input layer
-    input_ = tf.keras.layers.Input(shape=(None, input_dim, 1), name="input")
+    input_ = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
 
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
