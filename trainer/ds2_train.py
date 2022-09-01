@@ -229,7 +229,7 @@ def run_deep_speech(_):
         )
 
         # Optimizer
-        optimizer = tf.keras.optimizers.AdamOptimizer(learning_rate=flags_obj.learning_rate)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=flags_obj.learning_rate)
 
         # Compile the model
         model.compile(
