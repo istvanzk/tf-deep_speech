@@ -192,7 +192,7 @@ def run_deep_speech(_):
     # Data preprocessing
     logging.info("Data preprocessing...")
     train_speech_dataset = generate_dataset(flags_obj.train_data_csv)
-    test_speech_dataset = generate_dataset(flags_obj.test_data_dir)
+    test_speech_dataset = generate_dataset(flags_obj.test_data_csv)
     
     num_gpus = flags_core.get_num_gpus(flags_obj)   
     per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
