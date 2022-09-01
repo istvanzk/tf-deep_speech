@@ -35,7 +35,7 @@ import tensorflow as tf
 
 import data.dataset as dataset
 import decoder
-import model.keras_model as deep_speech_model
+from model.keras_model import ds2_model, SUPPORTED_RNNS
 from official.utils.flags import core as flags_core
 from official.common import distribute_utils as distribution_utils
 from official.utils.misc import model_helpers
@@ -95,7 +95,7 @@ def per_device_batch_size(batch_size, num_gpus):
 def evaluate_model(model):
     """Evaluate the model performance using WER anc CER as metrics.
 
-    The evaluation dataset indicated by flags_obj.test_data_dir is used.
+    The evaluation dataset indicated by flags_obj.eval_data_csv is used.
 
     Args:
         model: Keras model to evaluate.
@@ -106,7 +106,7 @@ def evaluate_model(model):
             'CER': Character Error Rate
     """
     # Input dataset
-    eval_speech_dataset = generate_dataset(flags_obj.eval_data_dir)
+    eval_speech_dataset = generate_dataset(flags_obj.eval_data_csv)
     speech_labels       = eval_speech_dataset.speech_labels
     entries             = eval_speech_dataset.entries
 
@@ -191,7 +191,7 @@ def run_deep_speech(_):
 
     # Data preprocessing
     logging.info("Data preprocessing...")
-    train_speech_dataset = generate_dataset(flags_obj.train_data_dir)
+    train_speech_dataset = generate_dataset(flags_obj.train_data_csv)
     test_speech_dataset = generate_dataset(flags_obj.test_data_dir)
     
     num_gpus = flags_core.get_num_gpus(flags_obj)   
@@ -204,7 +204,7 @@ def run_deep_speech(_):
     input_dataset_train = dataset.input_fn(per_replica_batch_size, train_speech_dataset)
     input_dataset_test = dataset.input_fn(per_replica_batch_size, test_speech_dataset)
 
-    # Get one element from the input dataset
+    # Get one element from the input dataset (= tuple of ({}, data))
     dict_data_info = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
     input_length = dict_data_info["input_length"]
     #features = dict_data_info["features"]
@@ -219,7 +219,7 @@ def run_deep_speech(_):
     with distribution_strategy.scope():
 
         # Model
-        model = deep_speech_model.model_karas(
+        model = ds2_model(
             input_length,
             num_classes, 
             flags_obj.rnn_hidden_layers, flags_obj.rnn_type,
@@ -293,8 +293,7 @@ def define_deep_speech_flags():
     """Add flags for run_deep_speech."""
     # Add common flags
     flags_core.define_base(
-        data_dir=False,  # we use train_data_dir and test_data_dir instead
-        export_dir=True,
+        data_dir=False,  # we use train_data_csv and test_data_csv instead
         train_epochs=True,
         hooks=True,
         num_gpu=True,
@@ -312,8 +311,7 @@ def define_deep_speech_flags():
     flags.adopt_module_key_flags(flags_core)
 
     flags_core.set_defaults(
-        model_dir="/tmp/deep_speech_model/",
-        export_dir="/tmp/deep_speech_saved_model/",
+        model_dir="deep_speech_model/",
         train_epochs=10,
         batch_size=128,
         hooks="")
@@ -324,20 +322,19 @@ def define_deep_speech_flags():
         help=flags_core.help_wrap("The random seed."))
 
     flags.DEFINE_string(
-        name="train_data_dir",
-        default="/tmp/librispeech_data/train-clean/LibriSpeech/train-clean.csv",
+        name="train_data_csv",
+        default="data/librispeech_data/train-clean/LibriSpeech/train-clean.csv",
         help=flags_core.help_wrap("The csv file path of train dataset."))
 
     flags.DEFINE_string(
-        name="eval_data_dir",
-        default="/tmp/librispeech_data/dev-clean/LibriSpeech/dev-clean.csv",
-        help=flags_core.help_wrap("The csv file path of evaluation dataset."))
-
-    flags.DEFINE_string(
-        name="test_data_dir",
-        default="/tmp/librispeech_data/test-clean/LibriSpeech/test-clean.csv",
+        name="test_data_csv",
+        default="data/librispeech_data/test-clean/LibriSpeech/test-clean.csv",
         help=flags_core.help_wrap("The csv file path of test dataset."))
 
+    flags.DEFINE_string(
+        name="eval_data_csv",
+        default="data/librispeech_data/dev-clean/LibriSpeech/dev-clean.csv",
+        help=flags_core.help_wrap("The csv file path of evaluation dataset."))
 
     flags.DEFINE_bool(
         name="sortagrad", default=True,
@@ -380,7 +377,7 @@ def define_deep_speech_flags():
 
     flags.DEFINE_enum(
         name="rnn_type", default="gru",
-        enum_values=deep_speech_model.SUPPORTED_RNNS.keys(),
+        enum_values=SUPPORTED_RNNS.keys(),
         case_sensitive=False,
         help=flags_core.help_wrap("Type of RNN cell."))
 
