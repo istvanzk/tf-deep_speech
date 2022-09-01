@@ -206,9 +206,9 @@ def run_deep_speech(_):
 
     # Get one element from the input dataset (= tuple of ({}, data))
     dict_data_info = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
-    input_length = dict_data_info["input_length"]
+    input_length = dict_data_info["input_length"][0]
     #features = dict_data_info["features"]
-    #label_length = dict_data_info["label_length"]
+    #label_length = dict_data_info["label_length"][0]
 
     # Use distribution strategy for multi-gpu training (when available)
     logging.info("Model generation and distribution...")
