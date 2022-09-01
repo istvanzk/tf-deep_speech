@@ -39,7 +39,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     """Define DeepSpeech2 model using Keras Functional API.
 
     Args:
-        input_dim: the dimensions of the input tensor
+        input_dim: the dimension of the input features tensor
         num_classes: an integer, the number of output classes/labels.
         num_rnn_layers: an integer, the number of rnn layers. By default, it's 5.
         rnn_type: a string, one of the supported rnn cells: gru, rnn and lstm.
@@ -54,7 +54,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     padding_conv_2 = (10, 5)
 
     # Input layer
-    input_ = tf.keras.layers.Input((None, input_dim), name="input")
+    input_ = tf.keras.layers.Input(shape=(None, input_dim, 1), name="input")
 
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
