@@ -121,7 +121,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
             momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
    
     output_ = tf.keras.layers.Dense(
-        num_classes, use_bias=use_bias, activation="softmax")(x)
+        num_classes+1, use_bias=use_bias, activation="softmax")(x)
 
     # The model
     model = tf.keras.Model(
