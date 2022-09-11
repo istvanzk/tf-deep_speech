@@ -34,6 +34,70 @@ _BATCH_NORM_DECAY = 0.997
 # Filters of convolution layer
 _CONV_FILTERS = 32
 
+def CTCLoss(labels, logits, features_length, input_length):
+    """Compute CTC loss """
+
+    def compute_length_after_conv(max_time_steps, ctc_time_steps, input_length):
+        """Computes the time_steps/ctc_input_length after convolution.
+
+        Suppose that the original feature contains two parts:
+        1) Real spectrogram signals, spanning input_length steps.
+        2) Padded part with all 0s.
+        The total length of those two parts is denoted as max_time_steps, which is
+        the padded length of the current batch. After convolution layers, the time
+        steps of a spectrogram feature will be decreased. As we know the percentage
+        of its original length within the entire length, we can compute the time steps
+        for the signal after conv as follows (using ctc_input_length to denote):
+        ctc_input_length = (input_length / max_time_steps) * output_length_of_conv.
+        This length is then fed into ctc loss function to compute loss.
+
+        Args:
+            max_time_steps: max_time_steps for the batch, after padding.
+            ctc_time_steps: number of timesteps after convolution.
+            input_length: actual length of the original spectrogram, without padding.
+
+        Returns:
+            the ctc_input_length after convolution layer.
+        """
+        ctc_input_length = tf.cast(tf.multiply(
+            input_length, ctc_time_steps), dtype=tf.float32)
+        return tf.cast(tf.math.floordiv(
+            ctc_input_length, tf.cast(max_time_steps, dtype=tf.float32)), dtype=tf.int32)
+
+
+    ctc_time_steps = tf.cast(tf.shape(logits)[1], dtype="int64")
+    label_length = tf.cast(tf.shape(labels)[1], dtype="int64")
+
+    ctc_input_length = compute_length_after_conv(
+        features_length, ctc_time_steps, input_length)
+
+    #batch_len = tf.cast(tf.shape(labels)[0], dtype="int64")
+    #ctc_input_length = ctc_input_length * tf.ones(shape=(batch_len, 1), dtype="int64")
+    #label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="int64")        
+
+    return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
+        labels, logits, ctc_input_length, label_length))
+
+
+# def WER(labels, logits):
+#     """Compute WER metric"""
+
+#     num_of_examples = len(logits)
+#     total_wer = 0
+#     greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=28)
+#     for i in range(num_of_examples):
+#         # Decode string.
+#         decoded_str = greedy_decoder.decode(logits[i])
+#         # Compute WER.
+#         total_wer += greedy_decoder.wer(decoded_str, labels[i]) / float(
+#             len(labels[i].split()))
+
+#     # Get mean value
+#     total_wer /= num_of_examples
+
+#     return total_wer
+
+
 def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional,
                 rnn_hidden_size, use_bias):
     """Define DeepSpeech2 model using Keras Functional API.
@@ -53,8 +117,10 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     padding_conv_1 = (20, 5)
     padding_conv_2 = (10, 5)
 
-    # Input layer
-    input_ = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
+    # Input layers
+    input_    = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
+    inputlng_ = tf.keras.layers.Input(shape=(1), name="input_length")
+    labels_   = tf.keras.layers.Input(shape=(1), name="labels")
 
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
@@ -125,8 +191,11 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
 
     # The model
     model = tf.keras.Model(
-        inputs=[input_], 
-        outputs=[output_], 
+        inputs=[input_, inputlng_, labels_], 
+        outputs=output_, 
         name="DeepSpeech2_KerasModel")
+
+    # Add custom CTC loss function
+    model.add_loss( CTCLoss(labels_, output_, tf.shape(input_)[1], inputlng_) )
 
     return model

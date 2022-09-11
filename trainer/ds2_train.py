@@ -36,7 +36,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 import data.dataset as dataset
 import decoder
-from model.keras_model import ds2_model, SUPPORTED_RNNS
+from model.keras_model import ds2_model, SUPPORTED_RNNS, CTCLoss
 from official.utils.flags import core as flags_core
 from official.common import distribute_utils as distribution_utils
 from official.utils.misc import model_helpers
@@ -145,44 +145,6 @@ def evaluate_model(model):
 
     return eval_results
 
-# def WER(labels, logits):
-#     """Compute WER metric"""
-
-#     num_of_examples = len(logits)
-#     total_wer = 0
-#     greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=28)
-#     for i in range(num_of_examples):
-#         # Decode string.
-#         decoded_str = greedy_decoder.decode(logits[i])
-#         # Compute WER.
-#         total_wer += greedy_decoder.wer(decoded_str, labels[i]) / float(
-#             len(labels[i].split()))
-
-#     # Get mean value
-#     total_wer /= num_of_examples
-
-#     return total_wer
-
-
-def CTCLoss(labels, logits):
-    """Compute CTC loss"""
-
-    batch_len = tf.cast(tf.shape(labels)[0], dtype="int64")
-    input_len = tf.cast(tf.shape(logits)[1], dtype="int64")
-    label_len = tf.cast(tf.shape(labels)[1], dtype="int64")
-
-    input_len = input_len * tf.ones(shape=(batch_len, 1), dtype="int64")
-    label_len = label_len * tf.ones(shape=(batch_len, 1), dtype="int64")        
-
-    #ctc_input_length = compute_length_after_conv(
-    #    tf.shape(features)[1], tf.shape(logits)[1], input_length)
-
-    #return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
-    #    labels, logits, ctc_input_length, label_length))
-
-    return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
-        labels, logits, input_len, label_len))
-
 
 def run_deep_speech(_):
     """Run DeepSpeech2 training and evaluation loop (TF2/Keras)."""
@@ -235,7 +197,7 @@ def run_deep_speech(_):
         # Compile the model
         model.compile(
             optimizer=optimizer, 
-            loss=CTCLoss,
+            loss=None,
             metrics=['accuracy'],
         )
 
