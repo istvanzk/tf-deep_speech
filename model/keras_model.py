@@ -34,7 +34,7 @@ _BATCH_NORM_DECAY = 0.997
 # Filters of convolution layer
 _CONV_FILTERS = 32
 
-def CTCLoss(labels, logits, features_length, input_length):
+def CTCLoss(labels, logits, features_length, input_length, labels_length):
     """Compute CTC loss """
 
     def compute_length_after_conv(max_time_steps, ctc_time_steps, input_length):
@@ -66,17 +66,17 @@ def CTCLoss(labels, logits, features_length, input_length):
 
 
     ctc_time_steps = tf.cast(tf.shape(logits)[1], dtype=tf.int32)
-    label_length = tf.cast(tf.shape(labels)[1], dtype=tf.int32)
+    #label_length = tf.cast(tf.shape(labels)[1], dtype=tf.int32)
 
     ctc_input_length = compute_length_after_conv(
         features_length, ctc_time_steps, tf.cast(input_length, dtype=tf.int32))
 
     #batch_len = tf.cast(tf.shape(labels)[0], dtype="int64")
-    #ctc_input_length = ctc_input_length * tf.ones(shape=(batch_len, 1), dtype="int64")
-    #label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="int64")        
+    #ctc_input_length = ctc_input_length * tf.ones(shape=(batch_len, 1), dtype="tf.int34")
+    #label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="tf.int32")        
 
     return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
-        labels, logits, ctc_input_length, label_length))
+        labels, logits, ctc_input_length, labels_length))
 
 
 # def WER(labels, logits):
@@ -118,9 +118,10 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     padding_conv_2 = (10, 5)
 
     # Input layers
-    input_    = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
-    inputlng_ = tf.keras.layers.Input(shape=(1), name="input_length")
-    labels_   = tf.keras.layers.Input(shape=(1), name="labels")
+    input_      = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
+    inputlng_   = tf.keras.layers.Input(shape=(1), name="input_length")
+    labels_     = tf.keras.layers.Input(shape=(1), name="labels")
+    labelslng_  = tf.keras.layers.Input(shape=(1), name="labels_length")
 
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
@@ -196,6 +197,6 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
         name="DeepSpeech2_KerasModel")
 
     # Add custom CTC loss function
-    model.add_loss( CTCLoss(labels_, output_, tf.shape(input_)[1], inputlng_) )
+    model.add_loss( CTCLoss(labels_, output_, tf.shape(input_)[1], inputlng_, labelslng_) )
 
     return model
