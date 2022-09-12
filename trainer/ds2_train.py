@@ -34,9 +34,12 @@ import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # pylint: enable=g-bad-import-order
 
+# Local modules
 import data.dataset as dataset
 import decoder
-from model.keras_model import ds2_model, SUPPORTED_RNNS, CTCLoss
+from model.keras_model import ds2_model, SUPPORTED_RNNS
+
+# TF2 modules
 from official.utils.flags import core as flags_core
 from official.common import distribute_utils as distribution_utils
 from official.utils.misc import model_helpers
