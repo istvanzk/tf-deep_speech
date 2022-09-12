@@ -65,8 +65,8 @@ def CTCLoss(labels, logits, features_length, input_length):
             ctc_input_length, tf.cast(max_time_steps, dtype=tf.float32)), dtype=tf.int32)
 
 
-    ctc_time_steps = tf.cast(tf.shape(logits)[1], dtype=tf.int64)
-    label_length = tf.cast(tf.shape(labels)[1], dtype=tf.int64)
+    ctc_time_steps = tf.cast(tf.shape(logits)[1], dtype=tf.int32)
+    label_length = tf.cast(tf.shape(labels)[1], dtype=tf.int32)
 
     ctc_input_length = compute_length_after_conv(
         features_length, ctc_time_steps, input_length)
