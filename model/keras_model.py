@@ -71,13 +71,21 @@ def CTCLoss(labels, logits, features_length, input_length, labels_length):
     ctc_input_length = compute_length_after_conv(
         features_length, ctc_time_steps, tf.cast(input_length, dtype=tf.int32))
 
-    #batch_len = tf.cast(tf.shape(labels)[0], dtype="int64")
-    #ctc_input_length = ctc_input_length * tf.ones(shape=(batch_len, 1), dtype="tf.int34")
+    #batch_len = tf.cast(tf.shape(labels)[0], dtype="int32")
+    #ctc_input_length = ctc_input_length * tf.ones(shape=(batch_len, 1), dtype="tf.int32")
     #label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="tf.int32")        
 
-    return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
-        labels, logits, ctc_input_length, tf.cast(labels_length, dtype=tf.int32)))
+    #return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
+    #    labels, logits, ctc_input_length, tf.cast(labels_length, dtype=tf.int32)))
 
+    # Computes CTC (Connectionist Temporal Classification) loss
+    # https://www.tensorflow.org/api_docs/python/tf/nn/ctc_loss
+    return tf.reduce_mean(tf.nn.ctc_loss(
+        labels, 
+        logits, 
+        tf.cast(labels_length, dtype=tf.int32), 
+        ctc_input_length, 
+        logits_time_major=False))
 
 # def WER(labels, logits):
 #     """Compute WER metric"""
