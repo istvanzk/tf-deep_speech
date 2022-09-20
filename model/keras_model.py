@@ -81,8 +81,8 @@ def CTCLoss(labels, logits, features_length, input_length, labels_length):
     # Computes CTC (Connectionist Temporal Classification) loss
     # https://www.tensorflow.org/api_docs/python/tf/nn/ctc_loss
     return tf.reduce_mean(tf.nn.ctc_loss(
-        labels, 
-        logits, 
+        tf.cast(labels, dtype=tf.int32),
+        tf.cast(logits, dtype=tf.int32), 
         tf.cast(labels_length, dtype=tf.int32), 
         ctc_input_length, 
         logits_time_major=False))
