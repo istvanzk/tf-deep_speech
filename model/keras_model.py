@@ -129,7 +129,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     # Input layers
     input_      = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
     inputlng_   = tf.keras.layers.Input(shape=(1), name="input_length")
-    labels_     = tf.keras.layers.Input(shape=(1), name="labels")
+    labels_     = tf.keras.layers.Input(shape=(None), name="labels")
     labelslng_  = tf.keras.layers.Input(shape=(1), name="labels_length")
 
     # Padding layer
