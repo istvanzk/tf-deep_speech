@@ -73,7 +73,7 @@ def CTCLoss(labels, logits, features_length, input_length, labels_length):
 
     batch_len = tf.cast(tf.shape(labels)[0], dtype=tf.int32)
     ctc_input_length = ctc_input_length * tf.ones(shape=(batch_len, 1), dtype=tf.int32)
-    labels_length = labels_length * tf.ones(shape=(batch_len, 1), dtype=tf.int32)        
+    labels_length = tf.cast(labels_length, dtype=tf.int32) * tf.ones(shape=(batch_len, 1), dtype=tf.int32)        
 
     #return tf.reduce_mean(tf.keras.backend.ctc_batch_cost(
     #    labels, logits, ctc_input_length, tf.cast(labels_length, dtype=tf.int32)))
