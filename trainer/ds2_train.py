@@ -179,8 +179,8 @@ def run_deep_speech(_):
         features     = dict_data_info["features"]
         input_length = dict_data_info["input_length"]
         labels       = dict_data_info["labels"]
-        label_length = dict_data_info["label_length"]
-        print(f"input_length = {input_length.shape}\nlabels = {labels.shape}\nlabel_length = {label_length.shape}\nfeatures = {features.shape}")
+        labels_length = dict_data_info["labels_length"]
+        print(f"input_length = {input_length.shape}\nlabels = {labels.shape}\nlabels_length = {labels_length.shape}\nfeatures = {features.shape}")
 
     # Use distribution strategy for multi-gpu training (when available)
     logging.info("Model generation and distribution...")
