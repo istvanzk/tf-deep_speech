@@ -49,8 +49,8 @@ def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
     # We only need the magnitude, which can be derived by applying tf.abs
     spectrogram = tf.abs(spectrogram)
     spectrogram = tf.math.pow(spectrogram, 0.5)
-
-    return np.log(spectrogram.T + np.finfo(float).eps)
+    spectrogram = np.log(spectrogram + np.finfo(float).eps) 
+    return np.transpose(spectrogram, (1,0))
 
 
     # # Extract strided windows
