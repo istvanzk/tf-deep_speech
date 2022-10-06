@@ -43,14 +43,15 @@ def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
     window_size = int(0.001 * sample_rate * window_ms)
 
     # Calculate spectrogram
-    # fft_length is not specified, it is set automatically to the smallest power of 2 enclosing frame_length.
+    # When fft_length is not specified, it is set automatically to the smallest power of 2 enclosing frame_length.
     spectrogram = tf.signal.stft(
-        samples, frame_length=window_size, frame_step=stride_size)
+        samples, frame_length=window_size, frame_step=stride_size, fft_length=320)
     # We only need the magnitude, which can be derived by applying tf.abs
     spectrogram = tf.abs(spectrogram)
     spectrogram = tf.math.pow(spectrogram, 0.5)
     spectrogram = np.log(spectrogram + np.finfo(float).eps) 
-    return np.transpose(spectrogram, (1,0))
+    return spectrogram
+    #return np.transpose(spectrogram, (1,0))
 
 
     # # Extract strided windows
