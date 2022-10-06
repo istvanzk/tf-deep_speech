@@ -21,7 +21,7 @@
 import tensorflow as tf
 import codecs
 import unicodedata
-#import numpy as np
+import numpy as np
 
 def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
                                 window_ms=20.0, max_freq=None, eps=1e-14):
@@ -50,6 +50,7 @@ def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
     spectrogram = tf.abs(spectrogram)
     spectrogram = tf.math.pow(spectrogram, 0.5)
 
+    return np.log(spectrogram.T + np.finfo(float).eps)
 
 
     # # Extract strided windows
