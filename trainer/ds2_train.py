@@ -51,6 +51,8 @@ _VOCABULARY_FILE = os.path.join(
 _WER_KEY = "WER"
 _CER_KEY = "CER"
 
+DEBUG_SHAPES = True
+
 def generate_dataset(data_dir):
     """Generate a speech dataset."""
     audio_conf = dataset.AudioConfig(sample_rate=flags_obj.sample_rate,
@@ -172,10 +174,13 @@ def run_deep_speech(_):
 
     # Get one element from the input dataset (= tuple of (features dict, labels))
     dict_data_info = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
-    #input_length = dict_data_info["input_length"]
     features_dim = dict_data_info["features"].shape[2]
-    #label_length = dict_data_info["label_length"]
-    #print(f"input_length = {input_length.shape}\nlabel_length = {label_length.shape}\nfeatures = {features.shape}")
+    if DEBUG_SHAPES:
+        features     = dict_data_info["features"]
+        input_length = dict_data_info["input_length"]
+        labels       = dict_data_info["labels"]
+        label_length = dict_data_info["label_length"]
+        print(f"input_length = {input_length.shape}\nlabels = {labels.shape}\nlabel_length = {label_length.shape}\nfeatures = {features.shape}")
 
     # Use distribution strategy for multi-gpu training (when available)
     logging.info("Model generation and distribution...")
