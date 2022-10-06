@@ -23,7 +23,7 @@ import random
 # pylint: disable=g-bad-import-order
 import numpy as np
 #from six.moves import xrange  # pylint: disable=redefined-builtin
-import soundfile
+#import soundfile
 import tensorflow as tf
 from absl import logging
 # pylint: enable=g-bad-import-order
@@ -97,17 +97,42 @@ def _normalize_audio_feature(audio_feature):
 
 def _preprocess_audio(audio_file_path, audio_featurizer, normalize):
     """Load the audio file and compute spectrogram feature."""
-    data, _ = soundfile.read(audio_file_path)
-    feature = featurizer.compute_spectrogram_feature(
+    # Read wav file
+    file = tf.io.read_file(audio_file_path)
+    # Decode the wav file
+    data, _ = tf.audio.decode_wav(file)
+    data = tf.squeeze(data, axis=-1)
+    # Change type to float
+    data = tf.cast(data, tf.float32)
+    # The spectogram (features)
+    spectrogram = featurizer.compute_spectrogram_feature(
         data, audio_featurizer.sample_rate, audio_featurizer.stride_ms,
         audio_featurizer.window_ms)
-    # Feature normalization
+ 
+    # Normalisation
     if normalize:
-        feature = _normalize_audio_feature(feature)
+        means = tf.math.reduce_mean(spectrogram, 1, keepdims=True)
+        stddevs = tf.math.reduce_std(spectrogram, 1, keepdims=True)
+        spectrogram = (spectrogram - means) / (stddevs + 1e-10)
 
     # Adding Channel dimension for conv2D input.
-    feature = np.expand_dims(feature, axis=2)
-    return feature
+    # The spectrogram is used
+    # as image-like input data with convolution layers (which expect
+    # shape (`batch_size`, `height`, `width`, `channels`).
+    spectrogram = spectrogram[..., tf.newaxis]
+    return spectrogram
+
+    # data, _ = soundfile.read(audio_file_path)
+    # feature = featurizer.compute_spectrogram_feature(
+    #     data, audio_featurizer.sample_rate, audio_featurizer.stride_ms,
+    #     audio_featurizer.window_ms)
+    # # Feature normalization
+    # if normalize:
+    #     feature = _normalize_audio_feature(feature)
+
+    # # Adding Channel dimension for conv2D input.
+    # feature = np.expand_dims(feature, axis=2)
+    # return feature
 
 
 def _preprocess_data(file_path):

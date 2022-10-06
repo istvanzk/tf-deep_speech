@@ -14,13 +14,14 @@
 #  limitations under the License.
 # ==============================================================================
 """Utility class for extracting features from the text and audio input."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+#from __future__ import absolute_import
+#from __future__ import division
+#from __future__ import print_function
 
+import tensorflow as tf
 import codecs
-import numpy as np
 import unicodedata
+#import numpy as np
 
 def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
                                 window_ms=20.0, max_freq=None, eps=1e-14):
@@ -28,6 +29,7 @@ def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
 
     More about spectrogram computation, please refer to:
     https://en.wikipedia.org/wiki/Short-time_Fourier_transform.
+    https://www.tensorflow.org/api_docs/python/tf/signal/stft 
     """
     if max_freq is None:
         max_freq = sample_rate / 2
@@ -40,31 +42,41 @@ def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
     stride_size = int(0.001 * sample_rate * stride_ms)
     window_size = int(0.001 * sample_rate * window_ms)
 
-    # Extract strided windows
-    truncate_size = (len(samples) - window_size) % stride_size
-    samples = samples[:len(samples) - truncate_size]
-    nshape = (window_size, (len(samples) - window_size) // stride_size + 1)
-    nstrides = (samples.strides[0], samples.strides[0] * stride_size)
-    windows = np.lib.stride_tricks.as_strided(
-        samples, shape=nshape, strides=nstrides)
-    assert np.all(
-        windows[:, 1] == samples[stride_size:(stride_size + window_size)])
+    # Calculate spectrogram
+    # fft_length is not specified, it is set automatically to the smallest power of 2 enclosing frame_length.
+    spectrogram = tf.signal.stft(
+        samples, frame_length=window_size, frame_step=stride_size)
+    # We only need the magnitude, which can be derived by applying tf.abs
+    spectrogram = tf.abs(spectrogram)
+    spectrogram = tf.math.pow(spectrogram, 0.5)
 
-    # Window weighting, squared Fast Fourier Transform (fft), scaling
-    weighting = np.hanning(window_size)[:, None]
-    fft = np.fft.rfft(windows * weighting, axis=0)
-    fft = np.absolute(fft)
-    fft = fft**2
-    scale = np.sum(weighting**2) * sample_rate
-    fft[1:-1, :] *= (2.0 / scale)
-    fft[(0, -1), :] /= scale
-    # Prepare fft frequency list
-    freqs = float(sample_rate) / window_size * np.arange(fft.shape[0])
 
-    # Compute spectrogram feature
-    ind = np.where(freqs <= max_freq)[0][-1] + 1
-    specgram = np.log(fft[:ind, :] + eps)
-    return np.transpose(specgram, (1, 0))
+
+    # # Extract strided windows
+    # truncate_size = (len(samples) - window_size) % stride_size
+    # samples = samples[:len(samples) - truncate_size]
+    # nshape = (window_size, (len(samples) - window_size) // stride_size + 1)
+    # nstrides = (samples.strides[0], samples.strides[0] * stride_size)
+    # windows = np.lib.stride_tricks.as_strided(
+    #     samples, shape=nshape, strides=nstrides)
+    # assert np.all(
+    #     windows[:, 1] == samples[stride_size:(stride_size + window_size)])
+
+    # # Window weighting, squared Fast Fourier Transform (fft), scaling
+    # weighting = np.hanning(window_size)[:, None]
+    # fft = np.fft.rfft(windows * weighting, axis=0)
+    # fft = np.absolute(fft)
+    # fft = fft**2
+    # scale = np.sum(weighting**2) * sample_rate
+    # fft[1:-1, :] *= (2.0 / scale)
+    # fft[(0, -1), :] /= scale
+    # # Prepare fft frequency list
+    # freqs = float(sample_rate) / window_size * np.arange(fft.shape[0])
+
+    # # Compute spectrogram feature
+    # ind = np.where(freqs <= max_freq)[0][-1] + 1
+    # specgram = np.log(fft[:ind, :] + eps)
+    # return np.transpose(specgram, (1, 0))
 
 
 class AudioFeaturizer(object):
