@@ -174,9 +174,9 @@ def run_deep_speech(_):
 
     # Get one element from the input dataset (= tuple of (features_dict, labels))
     features_dict = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
-    labels        = list(input_dataset_train.take(1).as_numpy_iterator())[1][0]
     features_dim = features_dict["features"].shape[2]
     if DEBUG_SHAPES:
+        labels        = list(input_dataset_train.take(1).as_numpy_iterator())[0][1]
         features      = features_dict["features"]
         input_length  = features_dict["input_length"]
         labels_length = features_dict["labels_length"]
