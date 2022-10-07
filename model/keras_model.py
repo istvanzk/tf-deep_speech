@@ -39,7 +39,7 @@ _CONV_FILTERS = 32
 #mae_metric = tf.keras.metrics.MeanAbsoluteError(name="mae")
 
 class CustomModelCTCLoss(tf.keras.Model):
-    def compute_length_after_conv(max_time_steps, ctc_time_steps, input_length):
+    def compute_length_after_conv(self, max_time_steps, ctc_time_steps, input_length):
         """Computes the time_steps/ctc_input_length after convolution.
 
         Suppose that the original feature contains two parts:
@@ -76,11 +76,11 @@ class CustomModelCTCLoss(tf.keras.Model):
             logits = self(features_dict['features'], training=True)  
 
             # CTC input length after convolution
-            features_length  = tf.cast(tf.shape(features_dict['features'])[1], dtype=tf.int32)
+            max_features_length  = tf.cast(tf.shape(features_dict['features'])[1], dtype=tf.int32)
             ctc_time_steps   = tf.cast(tf.shape(logits)[1], dtype=tf.int32)
+            input_length     = tf.cast(features_dict['input_length'], dtype=tf.int32)
             ctc_input_length = self.compute_length_after_conv(
-                tf.shape(features_dict['features'])[1], tf.shape(logits)[1], features_dict['input_length'])
-                #features_length, ctc_time_steps, tf.cast(features_dict['input_length'], dtype=tf.int32))
+                max_features_length, ctc_time_steps, input_length)
 
             # Compute CTC loss
             loss = tf.nn.ctc_loss(
