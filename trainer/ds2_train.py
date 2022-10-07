@@ -253,14 +253,12 @@ def run_deep_speech(_):
 
 
     # Evaluation
-    # TODO
     logging.info("Starting to evaluate...")
 
     eval_results = evaluate_model(model)
 
     logging.info(f"Evaluation result: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
 
-    # ...
 
 def define_deep_speech_flags():
     """Add flags for run_deep_speech."""
