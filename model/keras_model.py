@@ -79,13 +79,13 @@ class CustomModelCTCLoss(tf.keras.Model):
             features_length  = tf.cast(tf.shape(features_dict['features'])[1], dtype=tf.int32)
             ctc_time_steps   = tf.cast(tf.shape(logits)[1], dtype=tf.int32)
             ctc_input_length = self.compute_length_after_conv(
-                features_length, ctc_time_steps, tf.cast(features_dict['input_length'], dtype=tf.int32))
+                features_length, ctc_time_steps, tf.cast(features_dict['input_length'][0], dtype=tf.int32))
 
             # Compute CTC loss
             loss = tf.nn.ctc_loss(
                 labels=tf.cast(labels, dtype=tf.int32),
                 logits=tf.cast(logits, dtype=tf.float32),
-                label_length=tf.cast(features_dict['labels_length'], dtype=tf.int32),
+                label_length=tf.cast(features_dict['labels_length'][0], dtype=tf.int32),
                 logit_length=tf.cast(ctc_input_length, dtype=tf.int32),
                 logits_time_major=False)
             loss = tf.reduce_mean(loss)
@@ -208,9 +208,9 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
 
     # Input layers
     input_      = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
-    inputlng_   = tf.keras.layers.Input(shape=(1), name="input_length")
-    labels_     = tf.keras.layers.Input(shape=(1), name="labels")
-    labelslng_  = tf.keras.layers.Input(shape=(1), name="labels_length")
+    #inputlng_   = tf.keras.layers.Input(shape=(1), name="input_length")
+    #labels_     = tf.keras.layers.Input(shape=(1), name="labels")
+    #labelslng_  = tf.keras.layers.Input(shape=(1), name="labels_length")
 
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
