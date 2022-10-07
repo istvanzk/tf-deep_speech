@@ -200,8 +200,9 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
         num_classes+1, use_bias=use_bias, activation="softmax")(x)
 
     # The model
+    # inputs=[input_, inputlng_, labels_, labelslng_]
     model = tf.keras.Model(
-        inputs=[input_, inputlng_, labels_], 
+        inputs=input_, 
         outputs=output_, 
         name="DeepSpeech2_KerasModel")
 
