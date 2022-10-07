@@ -34,6 +34,86 @@ _BATCH_NORM_DECAY = 0.997
 # Filters of convolution layer
 _CONV_FILTERS = 32
 
+
+#loss_tracker = tf.keras.metrics.Mean(name="loss")
+#mae_metric = tf.keras.metrics.MeanAbsoluteError(name="mae")
+
+class CustomModelCTCLoss(tf.keras.Model):
+    def compute_length_after_conv(max_time_steps, ctc_time_steps, input_length):
+        """Computes the time_steps/ctc_input_length after convolution.
+
+        Suppose that the original feature contains two parts:
+        1) Real spectrogram signals, spanning input_length steps.
+        2) Padded part with all 0s.
+        The total length of those two parts is denoted as max_time_steps, which is
+        the padded length of the current batch. After convolution layers, the time
+        steps of a spectrogram feature will be decreased. As we know the percentage
+        of its original length within the entire length, we can compute the time steps
+        for the signal after conv as follows (using ctc_input_length to denote):
+        ctc_input_length = (input_length / max_time_steps) * output_length_of_conv.
+        This length is then fed into ctc loss function to compute loss.
+
+        Args:
+            max_time_steps: max_time_steps for the batch, after padding.
+            ctc_time_steps: number of timesteps after convolution.
+            input_length: actual length of the original spectrogram, without padding.
+
+        Returns:
+            the ctc_input_length after convolution layer.
+        """
+        ctc_input_length = tf.cast(tf.multiply(
+            input_length, ctc_time_steps), dtype=tf.float32)
+        return tf.cast(tf.math.floordiv(
+            ctc_input_length, tf.cast(max_time_steps, dtype=tf.float32)), dtype=tf.int32)
+
+    def train_step(self, data):
+        """Custom trainig step function"""
+        # data will be what gets yielded by dataset at each batch
+        features_dict, labels = data
+
+        with tf.GradientTape() as tape:
+            # Forward pass
+            logits = self(features_dict['features'], training=True)  
+
+            # CTC input length after convolution
+            features_length  = tf.cast(tf.shape(features_dict['features'])[1], dtype=tf.int32)
+            ctc_time_steps   = tf.cast(tf.shape(logits)[1], dtype=tf.int32)
+            ctc_input_length = self.compute_length_after_conv(
+                features_length, ctc_time_steps, tf.cast(features_dict['input_length'], dtype=tf.int32))
+
+            # Compute CTC loss
+            loss = tf.nn.ctc_loss(
+                labels=tf.cast(labels, dtype=tf.int32),
+                logits=tf.cast(logits, dtype=tf.float32),
+                label_length=tf.cast(features_dict['labels_length'], dtype=tf.int32)
+                logit_length=tf.cast(ctc_input_length, dtype=tf.int32)
+                logits_time_major=False)
+            loss = tf.reduce_mean(loss)
+
+        # Compute gradients
+        trainable_vars = self.trainable_variables
+        gradients = tape.gradient(loss, trainable_vars)
+
+        # Update weights
+        self.optimizer.apply_gradients(zip(gradients, trainable_vars))
+
+        # Compute our own metrics
+        #loss_tracker.update_state(loss)
+        #mae_metric.update_state(y, logits)
+        #return {"loss": loss_tracker.result(), "mae": mae_metric.result()}
+        return {'loss': loss}
+
+    # @property
+    # def metrics(self):
+    #     # We list our `Metric` objects here so that `reset_states()` can be
+    #     # called automatically at the start of each epoch
+    #     # or at the start of `evaluate()`.
+    #     # If you don't implement this property, you have to call
+    #     # `reset_states()` yourself at the time of your choosing.
+    #     return [loss_tracker, mae_metric]
+
+
+
 def CTCLoss(labels, logits, features_length, input_length, labels_length):
     """Compute CTC loss """
 
@@ -200,13 +280,14 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
         num_classes+1, use_bias=use_bias, activation="softmax")(x)
 
     # The model
-    # inputs=[input_, inputlng_, labels_, labelslng_]
-    model = tf.keras.Model(
+    #inputs=[input_, inputlng_, labels_, labelslng_]
+    #model = tf.keras.Model(
+    model = CustomModelCTCLoss(
         inputs=input_, 
         outputs=output_, 
         name="DeepSpeech2_KerasModel")
 
     # Add custom CTC loss function
-    model.add_loss( CTCLoss(labels_, output_, tf.shape(input_)[1], inputlng_, labelslng_) )
+    #model.add_loss( CTCLoss(labels_, output_, tf.shape(input_)[1], inputlng_, labelslng_) )
 
     return model
