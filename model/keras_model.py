@@ -85,8 +85,8 @@ class CustomModelCTCLoss(tf.keras.Model):
             loss = tf.nn.ctc_loss(
                 labels=tf.cast(labels, dtype=tf.int32),
                 logits=tf.cast(logits, dtype=tf.float32),
-                label_length=tf.cast(features_dict['labels_length'], dtype=tf.int32)
-                logit_length=tf.cast(ctc_input_length, dtype=tf.int32)
+                label_length=tf.cast(features_dict['labels_length'], dtype=tf.int32),
+                logit_length=tf.cast(ctc_input_length, dtype=tf.int32),
                 logits_time_major=False)
             loss = tf.reduce_mean(loss)
 
