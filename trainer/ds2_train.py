@@ -172,14 +172,14 @@ def run_deep_speech(_):
     input_dataset_train = dataset.input_fn(per_replica_batch_size, train_speech_dataset)
     input_dataset_test = dataset.input_fn(per_replica_batch_size, test_speech_dataset)
 
-    # Get one element from the input dataset (= tuple of (features dict, labels))
-    dict_data_info = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
-    features_dim = dict_data_info["features"].shape[2]
+    # Get one element from the input dataset (= tuple of (features_dict, labels))
+    features_dict = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
+    labels        = list(input_dataset_train.take(1).as_numpy_iterator())[1][0]
+    features_dim = features_dict["features"].shape[2]
     if DEBUG_SHAPES:
-        features     = dict_data_info["features"]
-        input_length = dict_data_info["input_length"]
-        labels       = dict_data_info["labels"]
-        labels_length = dict_data_info["labels_length"]
+        features      = features_dict["features"]
+        input_length  = features_dict["input_length"]
+        labels_length = features_dict["labels_length"]
         print(f"input_length_shape = {input_length.shape}\nlabels_shape = {labels.shape}\nlabels_length_shape = {labels_length.shape}\nfeatures_shape = {features.shape}")
         print(f"input_length = {input_length}\nlabels = {labels}\nlabels_length = {labels_length}\n")
 

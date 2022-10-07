@@ -274,7 +274,6 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
                 {
                     "features": features,
                     "input_length": input_length,
-                    "labels": labels,
                     "labels_length": label_length
                 },
                 labels)
@@ -287,7 +286,6 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
             {
                 "features": tf.TensorSpec(shape=(None, num_feature_bins, 1), dtype=tf.float32),
                 "input_length": tf.TensorSpec(shape=(1), dtype=tf.int32),
-                "labels": tf.TensorSpec(shape=(None), dtype=tf.int32),
                 "labels_length": tf.TensorSpec(shape=(1), dtype=tf.int32)
             },
             tf.TensorSpec(shape=(None), dtype=tf.int32)
@@ -325,7 +323,6 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
             {
                 "features": tf.TensorShape([None, num_feature_bins, 1]),
                 "input_length": tf.TensorShape([1]),
-                "labels": tf.TensorShape([None]),
                 "labels_length": tf.TensorShape([1])
             },
             tf.TensorShape([None]))
