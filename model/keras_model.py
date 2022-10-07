@@ -68,7 +68,7 @@ class CustomModelCTCLoss(tf.keras.Model):
 
     def train_step(self, data):
         """Custom trainig step function"""
-        # data will be what gets yielded by dataset at each batch
+        # data will be what gets yielded by dataset at each batch, a tuple of (features_dict, labels)
         features_dict, labels = data
 
         with tf.GradientTape() as tape:
@@ -79,13 +79,14 @@ class CustomModelCTCLoss(tf.keras.Model):
             features_length  = tf.cast(tf.shape(features_dict['features'])[1], dtype=tf.int32)
             ctc_time_steps   = tf.cast(tf.shape(logits)[1], dtype=tf.int32)
             ctc_input_length = self.compute_length_after_conv(
-                features_length, ctc_time_steps, tf.cast(features_dict['input_length'][0], dtype=tf.int32))
+                tf.shape(features_dict['features'])[1], tf.shape(logits)[1], features_dict['input_length'])
+                #features_length, ctc_time_steps, tf.cast(features_dict['input_length'], dtype=tf.int32))
 
             # Compute CTC loss
             loss = tf.nn.ctc_loss(
                 labels=tf.cast(labels, dtype=tf.int32),
                 logits=tf.cast(logits, dtype=tf.float32),
-                label_length=tf.cast(features_dict['labels_length'][0], dtype=tf.int32),
+                label_length=tf.cast(features_dict['labels_length'], dtype=tf.int32),
                 logit_length=tf.cast(ctc_input_length, dtype=tf.int32),
                 logits_time_major=False)
             loss = tf.reduce_mean(loss)
