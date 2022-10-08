@@ -264,9 +264,9 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
 
         if is_bidirectional:
             x = tf.keras.layers.Bidirectional(
-                tf.keras.layers.RNN(rnn_cell(rnn_hidden_size),
-                                return_sequences=True,
-                                name=f"rnn_{layer_counter}"))(x)
+                    tf.keras.layers.RNN(rnn_cell(rnn_hidden_size),
+                        return_sequences=True,
+                        name=f"rnn_{layer_counter}"))(x)
         else:
             x = tf.keras.layers.RNN(
                 rnn_cell(rnn_hidden_size), 
