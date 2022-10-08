@@ -76,24 +76,27 @@ class CustomModelCTCLoss(tf.keras.Model):
             logits = self(features_dict['features'], training=True)  
 
             #print(f"features_shape = {tf.shape(features_dict['features'])}\nlogits_shape = {tf.shape(logits)}")
-            print(f"features = {features_dict['features']}\nllabels = {labels}")
+            print(f"features = {features_dict['features']}\nlabels = {labels}")
             print(f"input_length = {features_dict['input_length']}\nlabel_length = {features_dict['labels_length']}")
             print(f"logits = {logits}")
 
 
             # CTC input length after convolution
-            max_features_length  = tf.cast(tf.shape(features_dict['features'])[1], dtype=tf.int32)
-            ctc_time_steps   = tf.cast(tf.shape(logits)[1], dtype=tf.int32)
-            input_length     = tf.cast(features_dict['input_length'], dtype=tf.int32)
-            ctc_input_length = self.compute_length_after_conv(
-                max_features_length, ctc_time_steps, input_length)
+            ctc_input_length = tf.cast(
+                self.compute_length_after_conv(
+                    tf.shape(features_dict['features'])[1], 
+                    tf.shape(logits)[1], 
+                    features_dict['input_length']),
+                dtype=tf.int32)
+
+            print(f"ctc_input_length = {ctc_input_length}")
 
             # Compute CTC loss
             loss = tf.nn.ctc_loss(
-                labels=tf.cast(labels, dtype=tf.int32),
+                labels=labels,
                 logits=logits,
-                label_length=tf.cast(features_dict['labels_length'], dtype=tf.int32),
-                logit_length=tf.cast(ctc_input_length, dtype=tf.int32),
+                label_length=features_dict['labels_length'],
+                logit_length=ctc_input_length,
                 logits_time_major=False)
             loss = tf.reduce_mean(loss)
 
