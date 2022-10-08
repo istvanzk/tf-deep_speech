@@ -182,7 +182,7 @@ def run_deep_speech(_):
         input_length  = features_dict["input_length"]
         labels_length = features_dict["labels_length"]
         print(f"input_length_shape = {input_length.shape}\nlabels_shape = {labels.shape}\nlabels_length_shape = {labels_length.shape}\nfeatures_shape = {features.shape}")
-        print(f"input_length = {input_length}\nlabels = {labels}\nlabels_length = {labels_length}\n")
+        #print(f"input_length = {input_length}\nlabels = {labels}\nlabels_length = {labels_length}\n")
 
     # Use distribution strategy for multi-gpu training (when available)
     logging.info("Model generation and distribution...")
