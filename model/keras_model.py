@@ -75,7 +75,7 @@ class CustomModelCTCLoss(tf.keras.Model):
             # Forward pass
             logits = self(features_dict['features'], training=True)  
 
-            print(f"features = {tf.size(features_dict['features'])}\nlogits = {tf.size(logits)}")
+            print(f"features_shape = {tf.shape(features_dict['features'])}\nlogits_shape = {tf.shape(logits)}")
 
             # CTC input length after convolution
             max_features_length  = tf.cast(tf.shape(features_dict['features'])[1], dtype=tf.int32)
