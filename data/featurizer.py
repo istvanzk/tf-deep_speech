@@ -24,7 +24,7 @@ import unicodedata
 import numpy as np
 
 def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
-                                window_ms=20.0, max_freq=None, eps=1e-14):
+                                window_ms=20.0, max_freq=None, fft_length=320):
     """Compute the spectrograms for the input samples(waveforms).
 
     More about spectrogram computation, please refer to:
@@ -45,7 +45,7 @@ def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
     # Calculate spectrogram
     # When fft_length is not specified, it is set automatically to the smallest power of 2 enclosing frame_length.
     spectrogram = tf.signal.stft(
-        samples, frame_length=window_size, frame_step=stride_size, fft_length=320)
+        samples, frame_length=window_size, frame_step=stride_size, fft_length=fft_length)
     # We only need the magnitude, which can be derived by applying tf.abs
     spectrogram = tf.abs(spectrogram)
     spectrogram = tf.math.pow(spectrogram, 0.5)
@@ -87,17 +87,20 @@ class AudioFeaturizer(object):
     def __init__(self,
                 sample_rate=16000,
                 window_ms=20.0,
-                stride_ms=10.0):
+                stride_ms=10.0,
+                fft_length=320):
         """Initialize the audio featurizer class according to the configs.
 
         Args:
         sample_rate: an integer specifying the sample rate of the input waveform.
         window_ms: an integer for the length of a spectrogram frame, in ms.
         stride_ms: an integer for the frame stride, in ms.
+        fft_length: an integer for the length of the sfft (number of frequency bins)
         """
         self.sample_rate = sample_rate
         self.window_ms = window_ms
         self.stride_ms = stride_ms
+        self.fft_length = fft_length
 
 
 def compute_label_feature(text, token_to_idx):

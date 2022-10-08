@@ -38,18 +38,21 @@ class AudioConfig(object):
                sample_rate,
                window_ms,
                stride_ms,
+               num_feature_bins,
                normalize=False):
         """Initialize the AudioConfig class.
         Args:
             sample_rate: an integer denoting the sample rate of the input waveform.
             window_ms: an integer for the length of a spectrogram frame, in ms.
             stride_ms: an integer for the frame stride, in ms.
+            num_feature_bins: an integer for the length of the spectrogram, in bins.
             normalize: a boolean for whether apply normalization on the audio feature.
         """
 
         self.sample_rate = sample_rate
         self.window_ms = window_ms
         self.stride_ms = stride_ms
+        self.num_feature_bins = num_feature_bins
         self.normalize = normalize
 
 
@@ -107,7 +110,7 @@ def _preprocess_audio(audio_file_path, audio_featurizer, normalize):
     # The spectogram (features)
     spectrogram = featurizer.compute_spectrogram_feature(
         data, audio_featurizer.sample_rate, audio_featurizer.stride_ms,
-        audio_featurizer.window_ms)
+        audio_featurizer.window_ms, None, audio_featurizer.fft_length)
  
     # Normalisation
     if normalize:
@@ -194,15 +197,16 @@ class DeepSpeechDataset(object):
         self.audio_featurizer = featurizer.AudioFeaturizer(
             sample_rate=self.config.audio_config.sample_rate,
             window_ms=self.config.audio_config.window_ms,
-            stride_ms=self.config.audio_config.stride_ms)
+            stride_ms=self.config.audio_config.stride_ms,
+            fft_length=self.config.audio_config.num_feature_bins)
         # Instantiate text feature extractor.
         self.text_featurizer = featurizer.TextFeaturizer(
             vocab_file=self.config.vocab_file_path)
 
         self.speech_labels = self.text_featurizer.speech_labels
         self.entries = _preprocess_data(self.config.data_path)
-        # The generated spectrogram will have 161 feature bins.
-        self.num_feature_bins = 161
+        # The generated spectrogram size/bins
+        self.num_feature_bins = self.config.audio_config.num_feature_bins
 
 
 def batch_wise_dataset_shuffle(entries, epoch_index, sortagrad, batch_size):

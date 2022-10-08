@@ -58,6 +58,7 @@ def generate_dataset(data_dir):
     audio_conf = dataset.AudioConfig(sample_rate=flags_obj.sample_rate,
                                     window_ms=flags_obj.window_ms,
                                     stride_ms=flags_obj.stride_ms,
+                                    num_feature_bins=flags_obj.num_feature_bins,
                                     normalize=True)
     train_data_conf = dataset.DatasetConfig(
         audio_conf,
@@ -324,6 +325,10 @@ def define_deep_speech_flags():
     flags.DEFINE_integer(
         name="stride_ms", default=10,
         help=flags_core.help_wrap("The frame step."))
+
+    flags.DEFINE_integer(
+        name="um_feature_bins", default=320,
+        help=flags_core.help_wrap("The size of the spectrogram."))
 
     flags.DEFINE_string(
         name="vocabulary_file", default=_VOCABULARY_FILE,
