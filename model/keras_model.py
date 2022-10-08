@@ -94,10 +94,10 @@ class CustomModelCTCLoss(tf.keras.Model):
             # Compute CTC loss
             loss = tf.nn.ctc_loss(
                 labels=labels,
-                logits=logits,
+                logits=tf.transpose(logits, perm=[1,0,2])
                 label_length=features_dict['labels_length'],
                 logit_length=ctc_input_length,
-                logits_time_major=False)
+                logits_time_major=True)
             loss = tf.reduce_mean(loss)
 
         # Compute gradients
