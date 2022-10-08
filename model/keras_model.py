@@ -88,7 +88,7 @@ class CustomModelCTCLoss(tf.keras.Model):
             # Compute CTC loss
             loss = tf.nn.ctc_loss(
                 labels=tf.cast(labels, dtype=tf.int32),
-                logits=tf.cast(logits, dtype=tf.float32),
+                logits=logits,
                 label_length=tf.cast(features_dict['labels_length'], dtype=tf.int32),
                 logit_length=tf.cast(ctc_input_length, dtype=tf.int32),
                 logits_time_major=False)
