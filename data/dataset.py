@@ -198,7 +198,7 @@ class DeepSpeechDataset(object):
             sample_rate=self.config.audio_config.sample_rate,
             window_ms=self.config.audio_config.window_ms,
             stride_ms=self.config.audio_config.stride_ms,
-            fft_length=self.config.audio_config.num_feature_bins)
+            num_feature_bins=self.config.audio_config.num_feature_bins))
         # Instantiate text feature extractor.
         self.text_featurizer = featurizer.TextFeaturizer(
             vocab_file=self.config.vocab_file_path)

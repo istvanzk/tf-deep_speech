@@ -88,7 +88,7 @@ class AudioFeaturizer(object):
                 sample_rate=16000,
                 window_ms=20.0,
                 stride_ms=10.0,
-                fft_length=320):
+                num_feature_bins=161):
         """Initialize the audio featurizer class according to the configs.
 
         Args:
@@ -100,7 +100,7 @@ class AudioFeaturizer(object):
         self.sample_rate = sample_rate
         self.window_ms = window_ms
         self.stride_ms = stride_ms
-        self.fft_length = fft_length
+        self.fft_length = 2*(num_feature_bins-1)
 
 
 def compute_label_feature(text, token_to_idx):
