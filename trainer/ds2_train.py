@@ -327,7 +327,7 @@ def define_deep_speech_flags():
         help=flags_core.help_wrap("The frame step."))
 
     flags.DEFINE_integer(
-        name="um_feature_bins", default=320,
+        name="num_feature_bins", default=320,
         help=flags_core.help_wrap("The size of the spectrogram."))
 
     flags.DEFINE_string(
