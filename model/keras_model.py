@@ -248,11 +248,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     # Output of 2nd conv layer with the shape of
     # [batch_size (N), times (T), features (F), channels (C)].
     # Convert the conv output to rnn input.
-    batch_size = tf.shape(x)[0]
-    feat_size = x.get_shape().as_list()[2]
-    x = tf.reshape(
-        x,
-        [batch_size, -1, feat_size * _CONV_FILTERS])
+    x = tf.keras.layers.Reshape((x.shape[-2] * x.shape[-1]))(x)
 
     # RNN layers
     rnn_cell = SUPPORTED_RNNS[rnn_type]
@@ -265,8 +261,8 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
         if is_bidirectional:
             x = tf.keras.layers.Bidirectional(
                     tf.keras.layers.RNN(rnn_cell(rnn_hidden_size),
-                        return_sequences=True,
-                        name=f"rnn_{layer_counter}"))(x)
+                        return_sequences=True),
+                    name=f"bidirectional_{layer_counter}")(x)
         else:
             x = tf.keras.layers.RNN(
                 rnn_cell(rnn_hidden_size), 
@@ -278,7 +274,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
             momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
    
     output_ = tf.keras.layers.Dense(
-        num_classes+1, use_bias=use_bias, activation="softmax")(x)
+        units=num_classes+1, use_bias=use_bias, activation="softmax")(x)
 
     # The model
     #inputs=[input_, inputlng_, labels_, labelslng_]
