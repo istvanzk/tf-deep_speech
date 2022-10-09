@@ -3,3 +3,4 @@ data/*.gz
 *.egg-info
 *.code-workspace
 *.pyc
+.vscode/settings.json

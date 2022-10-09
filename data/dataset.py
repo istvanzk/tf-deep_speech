@@ -288,11 +288,11 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
         _gen_data,
         output_signature=(
             {
-                "features": tf.TensorSpec(shape=(None, num_feature_bins, 1), dtype=tf.float32),
-                "input_length": tf.TensorSpec(shape=(1), dtype=tf.int32),
-                "labels_length": tf.TensorSpec(shape=(1), dtype=tf.int32)
+                "features": tf.TensorSpec(shape=(None, num_feature_bins, 1), dtype=tf.float32),  # type: ignore
+                "input_length": tf.TensorSpec(shape=(1), dtype=tf.int32),  # type: ignore
+                "labels_length": tf.TensorSpec(shape=(1), dtype=tf.int32)  # type: ignore
             },
-            tf.TensorSpec(shape=(None), dtype=tf.int32)
+            tf.TensorSpec(shape=(None), dtype=tf.int32)  # type: ignore
         )
     )
         # output_types=(
