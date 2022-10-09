@@ -69,6 +69,7 @@ class CustomModelCTCLoss(tf.keras.Model):
 
     def train_step(self, data):
         """Custom trainig step function"""
+        # https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
         # data will be what gets yielded by dataset at each batch, a tuple of (features_dict, labels)
         features_dict, labels = data
 
@@ -97,13 +98,15 @@ class CustomModelCTCLoss(tf.keras.Model):
             #tf.print("ctc_input_length: ",  ctc_input_length, output_stream=sys.stdout)
 
             # Compute CTC loss
-            loss = tf.nn.ctc_loss(
-                labels=labels,
-                logits=logits,
-                label_length=features_dict['labels_length'],
-                logit_length=ctc_input_length,
-                logits_time_major=False)
-            loss = tf.reduce_mean(loss)
+            loss = tf.keras.backend.ctc_batch_cost(
+                labels, logits, ctc_input_length, features_dict['labels_length'])
+            # loss = tf.nn.ctc_loss(
+            #     labels=labels,
+            #     logits=logits,
+            #     label_length=features_dict['labels_length'],
+            #     logit_length=ctc_input_length,
+            #     logits_time_major=False)
+            # loss = tf.reduce_mean(loss)
 
         # Compute gradients
         trainable_vars = self.trainable_variables
