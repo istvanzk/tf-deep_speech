@@ -77,10 +77,10 @@ class CustomModelCTCLoss(tf.keras.Model):
             # Forward pass
             logits = self(features_dict['features'], training=True)  
 
-            #print(f"features_shape = {tf.shape(features_dict['features'])}\nlogits_shape = {tf.shape(logits)}")
-            print(f"features = {features_dict['features']}\nlabels = {labels}")
-            print(f"input_length = {features_dict['input_length']}\nlabel_length = {features_dict['labels_length']}")
-            print(f"logits = {logits}")
+            # print(f"features_shape = {tf.shape(features_dict['features'])}\nlogits_shape = {tf.shape(logits)}")
+            # print(f"features = {features_dict['features']}\nlabels = {labels}")
+            # print(f"input_length = {features_dict['input_length']}\nlabel_length = {features_dict['labels_length']}")
+            # print(f"logits = {logits}")
 
             #tf.print("logits: ",  logits, output_stream=sys.stdout)
             #tf.print("labels: ",  labels, output_stream=sys.stdout)
@@ -94,7 +94,7 @@ class CustomModelCTCLoss(tf.keras.Model):
                     features_dict['input_length']),
                 dtype=tf.int32)
 
-            print(f"ctc_input_length = {ctc_input_length}")
+            # print(f"ctc_input_length = {ctc_input_length}")
             #tf.print("ctc_input_length: ",  ctc_input_length, output_stream=sys.stdout)
 
             # Compute CTC loss
