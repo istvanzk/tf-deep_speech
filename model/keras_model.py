@@ -67,6 +67,7 @@ class CustomModelCTCLoss(tf.keras.Model):
         return tf.cast(tf.math.floordiv(
             ctc_input_length, tf.cast(max_time_steps, dtype=tf.float32)), dtype=tf.int32)
 
+    @tf.function
     def train_step(self, data):
         """Custom trainig step function"""
         # data will be what gets yielded by dataset at each batch, a tuple of (features_dict, labels)
