@@ -19,6 +19,7 @@
 #from __future__ import print_function
 
 import tensorflow as tf
+import sys
 
 # Supported rnn cells.
 SUPPORTED_RNNS = {
@@ -80,6 +81,9 @@ class CustomModelCTCLoss(tf.keras.Model):
             print(f"input_length = {features_dict['input_length']}\nlabel_length = {features_dict['labels_length']}")
             print(f"logits = {logits}")
 
+            tf.print("logits: ",  logits, output_stream=sys.stdout)
+            tf.print("labels: ",  labels, output_stream=sys.stdout)
+
 
             # CTC input length after convolution
             ctc_input_length = tf.cast(
@@ -90,6 +94,7 @@ class CustomModelCTCLoss(tf.keras.Model):
                 dtype=tf.int32)
 
             print(f"ctc_input_length = {ctc_input_length}")
+            tf.print("ctc_input_length: ",  ctc_input_length, output_stream=sys.stdout)
 
             # Compute CTC loss
             loss = tf.nn.ctc_loss(
