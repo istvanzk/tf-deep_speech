@@ -207,8 +207,7 @@ def run_deep_speech(_):
         # Compile the model
         model.compile(
             optimizer=optimizer, 
-            loss=None,
-            metrics=['accuracy'],
+            loss=None
         )
 
     # Plot summary of the model
