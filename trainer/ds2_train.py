@@ -339,7 +339,7 @@ def define_deep_speech_flags():
         help=flags_core.help_wrap("The hidden size of RNNs."))
 
     flags.DEFINE_integer(
-        name="rnn_hidden_layers", default=5,
+        name="rnn_hidden_layers", default=2,
         help=flags_core.help_wrap("The number of RNN layers."))
 
     flags.DEFINE_bool(
