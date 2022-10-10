@@ -249,12 +249,20 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
     """Input function for model training and evaluation.
 
     Args:
-        batch_size: an integer denoting the size of a batch.
+        batch_size: an integer denoting the size of a (global) batch.
         deep_speech_dataset: DeepSpeechDataset object.
         repeat: an integer for how many times to repeat the dataset.
 
     Returns:
         a tf.data.Dataset object for model to consume.
+
+    NOTE: The input batch of data (called global batch) is automatically split 
+    into stratewgy.num_replicas_in_sync different sub-batches (called local batches)
+
+    For MirroredStrategy: https://keras.io/guides/distributed_training/
+    For distributed strategy:
+    https://www.tensorflow.org/tutorials/distribute/input
+    https://www.tensorflow.org/api_docs/python/tf/data/experimental/DistributeOptions
     """
     # Dataset properties
     data_entries = deep_speech_dataset.entries
@@ -295,33 +303,22 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
             tf.TensorSpec(shape=(None), dtype=tf.int32)  # type: ignore
         )
     )
-        # output_types=(
-        #     {
-        #         "features": tf.float32,
-        #         "input_length": tf.int32,
-        #         "labels_length": tf.int32
-        #     },
-        #     tf.int32),
-        # output_shapes=(
-        #     {
-        #         "features": tf.TensorShape([None, num_feature_bins, 1]),
-        #         "input_length": tf.TensorShape([1]),
-        #         "labels_length": tf.TensorShape([1])
-        #     },
-        #     tf.TensorShape([None]))
     
     # Using an Options instance to disable auto-sharding with tf.distribute (single worker)
-    # From: https://stackoverflow.com/questions/65917500/tensorflow-keras-generator-turn-off-auto-sharding-or-switch-auto-shard-policiy
-    # and https://www.tensorflow.org/tutorials/distribute/input
-    # https://www.tensorflow.org/api_docs/python/tf/data/experimental/DistributeOptions
+    # https://stackoverflow.com/questions/65917500/tensorflow-keras-generator-turn-off-auto-sharding-or-switch-auto-shard-policiy
     options = tf.data.Options()
     options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
     dataset = dataset.with_options(options)
 
+    # NOTE: Using
+    # https://www.tensorflow.org/tutorials/distribute/input#tfdistributestrategydistribute_datasets_from_function
+    # solution does not work with Keras API as the returned ditributed dataset is an iterator not a DataSet!
+ 
     # Repeat and batch the dataset
     dataset = dataset.repeat(repeat)
 
-    # Padding the features to its max length dimensions.
+    # Data is batched with the global batch size to increase distributed performance
+    # Padding the features to its max length dimensions
     dataset = dataset.padded_batch(
         batch_size=batch_size,
         padded_shapes=(
@@ -333,7 +330,7 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
             tf.TensorShape([None]))
     )
 
-    # Prefetch to improve speed of input pipeline.
+    # Prefetch to improve speed of input pipeline
     dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
     return dataset
 
