@@ -199,9 +199,9 @@ def run_deep_speech(_):
     input_dataset_test = dataset.input_fn(flags_obj.batch_size * distribution_strategy.num_replicas_in_sync, test_speech_dataset)
 
     # Get one element from the input dataset (= tuple of (features_dict, labels))
-    features_dict = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
-    features_dim = features_dict["features"].shape[2]
+    # and print some info about it
     if DEBUG_SHAPES:
+        features_dict = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
         labels        = list(input_dataset_train.take(1).as_numpy_iterator())[0][1]
         features      = features_dict["features"]
         input_length  = features_dict["input_length"]
@@ -219,7 +219,7 @@ def run_deep_speech(_):
 
         # Model
         model = ds2_model(
-            features_dim,
+            flags_obj.num_feature_bins,
             num_classes, 
             flags_obj.rnn_hidden_layers, flags_obj.rnn_type,
             flags_obj.is_bidirectional, flags_obj.rnn_hidden_size,
