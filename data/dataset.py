@@ -310,11 +310,12 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
         #     },
         #     tf.TensorShape([None]))
     
-    # Using an Options instance to enable auto-sharding, in tf.distribute
+    # Using an Options instance to disable auto-sharding with tf.distribute (single worker)
     # From: https://stackoverflow.com/questions/65917500/tensorflow-keras-generator-turn-off-auto-sharding-or-switch-auto-shard-policiy
     # and https://www.tensorflow.org/tutorials/distribute/input
+    # https://www.tensorflow.org/api_docs/python/tf/data/experimental/DistributeOptions
     options = tf.data.Options()
-    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
+    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
     dataset = dataset.with_options(options)
 
     # Repeat and batch the dataset
