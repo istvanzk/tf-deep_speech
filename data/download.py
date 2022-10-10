@@ -228,14 +228,20 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
             transcript = unicodedata.normalize("NFKD", transcript).encode(
                 "utf-8").decode("utf-8").strip().lower()
 
-            # Convert MP3 to WAV.
-            mp3_file = os.path.join(source_dir, mp3file)
-            wav_file = os.path.join(target_dir, mp3file.replace("mp3", "wav"))
-            if not tf.io.gfile.exists(wav_file):
-                tfm.build(mp3_file, wav_file)
-            wav_filesize = os.path.getsize(wav_file)
+            # Skip entries for which the transcript conntains the '"' character
+            if transcript.find('"') > -1:     
+                
+                # Replace all '-' with '–' in the transcript (as it should be!)
+                transcript = transcript.replace("-", "–")
 
-            files.append((os.path.abspath(wav_file), wav_filesize, transcript))
+                # Convert MP3 to WAV
+                mp3_file = os.path.join(source_dir, mp3file)
+                wav_file = os.path.join(target_dir, mp3file.replace("mp3", "wav"))
+                if not tf.io.gfile.exists(wav_file):
+                    tfm.build(mp3_file, wav_file)
+                wav_filesize = os.path.getsize(wav_file)
+
+                files.append((os.path.abspath(wav_file), wav_filesize, transcript))
 
 
     # Write to CSV file which contains three columns:
