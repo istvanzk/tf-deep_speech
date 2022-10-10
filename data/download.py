@@ -19,10 +19,6 @@ Download and preprocess LibriSpeech dataset for DeepSpeech model.
 Preprocess Mozilla Common Voice Corpus dataset for DeepSpeech model.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import codecs
 import fnmatch
 import os
