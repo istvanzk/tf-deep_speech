@@ -51,7 +51,12 @@ _VOCABULARY_FILE = os.path.join(
 _WER_KEY = "WER"
 _CER_KEY = "CER"
 
+# Simple debug output (print)
 DEBUG_SHAPES = True
+
+# Simulate multiple CPUs with virtual devices
+N_VIRTUAL_DEVICES = 1
+
 
 def generate_dataset(data_dir):
     """Generate a speech dataset."""
@@ -158,20 +163,40 @@ def run_deep_speech(_):
     # Initialise random seed 
     tf.random.set_seed(flags_obj.seed)
 
+    # Number of GPUs to use
+    num_gpus = flags_core.get_num_gpus(flags_obj)   
+
+    # Simulate multiple CPUs with virtual devices
+    if num_gpus == 0:
+        physical_devices = tf.config.list_physical_devices("CPU")
+        tf.config.set_logical_device_configuration(
+            physical_devices[0], [tf.config.LogicalDeviceConfiguration() for _ in range(N_VIRTUAL_DEVICES)])
+
+    # Available devices (CPU+GPU/TPU)
+    print("Available devices:")
+    for i, device in enumerate(tf.config.list_logical_devices()):
+        print("%d) %s" % (i, device))
+
     # Data preprocessing
     logging.info("Data preprocessing...")
     train_speech_dataset = generate_dataset(flags_obj.train_data_csv)
     test_speech_dataset = generate_dataset(flags_obj.test_data_csv)
     
-    num_gpus = flags_core.get_num_gpus(flags_obj)   
-    per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
-
     # Number of label classes. Label string is generated from the --vocabulary_file file
     num_classes = len(train_speech_dataset.speech_labels)
 
+    # Set distributionn strategy 
+    # Uses MirroredStrategy as default, distribution_strategy="mirrored"
+    # MirroredStrategy trains your model on multiple GPUs on a single machine/worker. 
+    # For synchronous training on many GPUs on multiple workers, use distribution_strategy="multi_worker_mirrored"
+    distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus)     
+
     # Input datasets (generator function)
-    input_dataset_train = dataset.input_fn(per_replica_batch_size, train_speech_dataset)
-    input_dataset_test = dataset.input_fn(per_replica_batch_size, test_speech_dataset)
+    #per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
+    # The input batch of data (called global batch) is automatically split into num_replicas_in_sync different sub-batches (called local batches)
+    # When training a model with multiple GPUs, you can use the extra computing power effectively by increasing the batch size.
+    input_dataset_train = dataset.input_fn(flags_obj.batch_size * distribution_strategy.num_replicas_in_sync, train_speech_dataset)
+    input_dataset_test = dataset.input_fn(flags_obj.batch_size * distribution_strategy.num_replicas_in_sync, test_speech_dataset)
 
     # Get one element from the input dataset (= tuple of (features_dict, labels))
     features_dict = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
@@ -184,12 +209,12 @@ def run_deep_speech(_):
         print(f"input_length_shape = {input_length.shape}\nlabels_shape = {labels.shape}\nlabels_length_shape = {labels_length.shape}\nfeatures_shape = {features.shape}")
         #print(f"input_length = {input_length}\nlabels = {labels}\nlabels_length = {labels_length}\n")
 
-    # Use distribution strategy for multi-gpu training (when available)
+    # Use distribution strategy for multi-gpu on single worker training (when available)
     logging.info("Model generation and distribution...")
 
-    distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus)
-
+    # tf.distribute calls the input function on the CPU device of each of the workers
     # See: https://www.tensorflow.org/tutorials/distribute/keras
+    # https://www.tensorflow.org/tutorials/distribute/input
     with distribution_strategy.scope():
 
         # Model
