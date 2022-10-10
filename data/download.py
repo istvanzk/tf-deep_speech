@@ -225,7 +225,7 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
                 "utf-8").decode("utf-8").strip().lower()
 
             # Skip entries for which the transcript conntains the '"' character
-            if transcript.find('"') > -1:     
+            if transcript.find('"') == -1:     
                 
                 # Replace all '-' with '–' in the transcript (as it should be!)
                 transcript = transcript.replace("-", "–")
