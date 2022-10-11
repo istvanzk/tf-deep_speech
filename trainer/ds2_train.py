@@ -198,6 +198,10 @@ def run_deep_speech(_):
     input_dataset_train = dataset.input_fn(flags_obj.batch_size * distribution_strategy.num_replicas_in_sync, train_speech_dataset)
     input_dataset_test = dataset.input_fn(flags_obj.batch_size * distribution_strategy.num_replicas_in_sync, test_speech_dataset)
 
+    # These are iterators over DataSet
+    #train_dist_dataset = distribution_strategy.experimental_distribute_dataset(input_dataset_train)
+    #test_dist_dataset  = distribution_strategy.experimental_distribute_dataset(input_dataset_test)
+
     # Get one element from the input dataset (= tuple of (features_dict, labels))
     # and print some info about it
     if DEBUG_SHAPES:
