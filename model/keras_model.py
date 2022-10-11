@@ -40,6 +40,10 @@ _CONV_FILTERS = 32
 #mae_metric = tf.keras.metrics.MeanAbsoluteError(name="mae")
 
 class CustomModelCTCLoss(tf.keras.Model):
+    """Custom Model class with CTC loss"""
+    #def _init_(self):
+    #    super().__init__()
+
     def compute_length_after_conv(self, max_time_steps, ctc_time_steps, input_length):
         """Computes the time_steps/ctc_input_length after convolution.
 
@@ -67,10 +71,15 @@ class CustomModelCTCLoss(tf.keras.Model):
         return tf.cast(tf.math.floordiv(
             ctc_input_length, tf.cast(max_time_steps, dtype=tf.float32)), dtype=tf.int32)
 
+    @tf.function
     def train_step(self, data):
-        """Custom trainig step function"""
-        # https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
-        # data will be what gets yielded by dataset at each batch, a tuple of (features_dict, labels)
+        """Custom trainig step function
+
+        See: https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
+        https://www.tensorflow.org/tutorials/distribute/custom_training
+        
+        The data input will be what gets yielded by dataset at each batch, a tuple of (features_dict, labels)
+        """
         features_dict, labels = data
 
         with tf.GradientTape() as tape:
@@ -100,6 +109,8 @@ class CustomModelCTCLoss(tf.keras.Model):
             # Compute CTC loss
             loss = tf.keras.backend.ctc_batch_cost(
                 labels, logits, ctc_input_length, features_dict['labels_length'])
+            # loss = tf.nn.compute_average_loss(loss, global_batch_size=GLOBAL_BATCH_SIZE)
+
             # loss = tf.nn.ctc_loss(
             #     labels=labels,
             #     logits=logits,
@@ -115,11 +126,50 @@ class CustomModelCTCLoss(tf.keras.Model):
         # Update weights
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
 
-        # Compute our own metrics
+        return {'loss': loss}
+
+        # Update the metrics
         #loss_tracker.update_state(loss)
         #mae_metric.update_state(y, logits)
         #return {"loss": loss_tracker.result(), "mae": mae_metric.result()}
+
+        # Return a dict mapping metric names to current value.
+        # Note that it will include the loss (tracked in self.metrics).
+        #return {m.name: m.result() for m in self.metrics}
+
+    @tf.function
+    def test_step(self, data):
+        """Custom testing step function
+
+        See: https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
+        https://www.tensorflow.org/tutorials/distribute/custom_training
+        
+        The data input will be what gets yielded by dataset at each batch, a tuple of (features_dict, labels)
+        """
+        features_dict, labels = data
+
+        # Compute predictions
+        logits = self(features_dict['features'], training=False)
+
+        # CTC input length after convolution
+        ctc_input_length = tf.cast(
+            self.compute_length_after_conv(
+                tf.shape(features_dict['features'])[1], 
+                tf.shape(logits)[1], 
+                features_dict['input_length']),
+            dtype=tf.int32)
+        # Update the loss
+        loss = tf.keras.backend.ctc_batch_cost(
+            labels, logits, ctc_input_length, features_dict['labels_length'])
+
         return {'loss': loss}
+
+        # Update the metrics
+        #self.compiled_metrics.update_state(labels, logits)
+
+        # Return a dict mapping metric names to current value.
+        # Note that it will include the loss (tracked in self.metrics).
+        #return {m.name: m.result() for m in self.metrics}
 
     # @property
     # def metrics(self):
