@@ -304,15 +304,15 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
         )
     )
     
-    # Using an Options instance to disable auto-sharding with tf.distribute (single worker)
+    # Using an Options instance to enable auto-sharding with tf.distribute (multiple`` devices on a single worker)
     # https://stackoverflow.com/questions/65917500/tensorflow-keras-generator-turn-off-auto-sharding-or-switch-auto-shard-policiy
     options = tf.data.Options()
-    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
+    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
     dataset = dataset.with_options(options)
 
     # NOTE: Using
     # https://www.tensorflow.org/tutorials/distribute/input#tfdistributestrategydistribute_datasets_from_function
-    # solution does not work with Keras API as the returned ditributed dataset is an iterator not a DataSet!
+    # solution does not work directly with Keras API .fit() as the returned ditributed dataset is an iterator not a DataSet!
  
     # Repeat and batch the dataset
     dataset = dataset.repeat(repeat)
