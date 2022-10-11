@@ -71,7 +71,7 @@ class CustomModelCTCLoss(tf.keras.Model):
         return tf.cast(tf.math.floordiv(
             ctc_input_length, tf.cast(max_time_steps, dtype=tf.float32)), dtype=tf.int32)
 
-    @tf.function
+    
     def train_step(self, data):
         """Custom trainig step function
 
@@ -137,7 +137,7 @@ class CustomModelCTCLoss(tf.keras.Model):
         # Note that it will include the loss (tracked in self.metrics).
         #return {m.name: m.result() for m in self.metrics}
 
-    @tf.function
+    
     def test_step(self, data):
         """Custom testing step function
 
