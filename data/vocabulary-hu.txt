@@ -42,6 +42,7 @@ z
 .
 ,
 ;
+:
 !
 ?
 # end of vocabulary
