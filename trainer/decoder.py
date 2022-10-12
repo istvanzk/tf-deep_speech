@@ -14,12 +14,8 @@
 # limitations under the License.
 # ==============================================================================
 """Deep speech decoder."""
-#from __future__ import absolute_import
-#from __future__ import division
-#from __future__ import print_function
 
 import itertools
-
 from nltk.metrics import distance
 import numpy as np
 
