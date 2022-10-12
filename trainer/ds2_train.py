@@ -14,9 +14,6 @@
 # limitations under the License.
 # ==============================================================================
 """Main entry to train and evaluate DeepSpeech model."""
-#from __future__ import absolute_import
-#from __future__ import division
-#from __future__ import print_function
 
 import os
 # Disable all GPUs. This prevents errors caused by all workers trying to use the same GPU. 
@@ -167,7 +164,7 @@ def run_deep_speech(_):
     num_gpus = flags_core.get_num_gpus(flags_obj)   
 
     # Simulate multiple CPUs with virtual devices
-    if num_gpus == 0:
+    if num_gpus == 0 and N_VIRTUAL_DEVICES > 1:
         physical_devices = tf.config.list_physical_devices("CPU")
         tf.config.set_logical_device_configuration(
             physical_devices[0], [tf.config.LogicalDeviceConfiguration() for _ in range(N_VIRTUAL_DEVICES)])
@@ -178,7 +175,7 @@ def run_deep_speech(_):
         print("%d) %s" % (i, device))
 
     # Data preprocessing
-    logging.info("Data preprocessing...")
+    logging.info("Data preprocessing and distribution...")
     train_speech_dataset = generate_dataset(flags_obj.train_data_csv)
     test_speech_dataset = generate_dataset(flags_obj.test_data_csv)
     
@@ -191,12 +188,12 @@ def run_deep_speech(_):
     # For synchronous training on many GPUs on multiple workers, use distribution_strategy="multi_worker_mirrored"
     distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus)     
 
-    # Input datasets (generator function)
-    #per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, num_gpus)
-    # The input batch of data (called global batch) is automatically split into num_replicas_in_sync different sub-batches (called local batches)
-    # When training a model with multiple GPUs, you can use the extra computing power effectively by increasing the batch size.
-    input_dataset_train = dataset.input_fn(flags_obj.batch_size * distribution_strategy.num_replicas_in_sync, train_speech_dataset)
-    input_dataset_test = dataset.input_fn(flags_obj.batch_size * distribution_strategy.num_replicas_in_sync, test_speech_dataset)
+    # Input datasets (generator functions)
+    # The input batch of data specified in flags_obj.batch_size (called global batch) is automatically split 
+    # into num_replicas_in_sync different sub-batches (called local batches)
+    per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, distribution_strategy.num_replicas_in_sync)
+    input_dataset_train = dataset.input_fn(per_replica_batch_size * distribution_strategy.num_replicas_in_sync, train_speech_dataset)
+    input_dataset_test  = dataset.input_fn(per_replica_batch_size * distribution_strategy.num_replicas_in_sync, test_speech_dataset)
 
     # These are iterators over DataSet
     #train_dist_dataset = distribution_strategy.experimental_distribute_dataset(input_dataset_train)
@@ -311,7 +308,7 @@ def define_deep_speech_flags():
     flags.adopt_module_key_flags(flags_core)
 
     flags_core.set_defaults(
-        model_dir="deep_speech_model/",
+        model_dir="model/",
         train_epochs=10,
         batch_size=128,
         hooks="")
