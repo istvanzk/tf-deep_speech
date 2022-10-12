@@ -228,7 +228,9 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
             if transcript.find('"') == -1:     
                 
                 # Replace all '-' with '–' in the transcript (as it should be!)
+                # Remove all '’' in the transcript 
                 transcript = transcript.replace("-", "–")
+                transcript = transcript.replace("’", "")
 
                 # Convert MP3 to WAV
                 mp3_file = os.path.join(source_dir, mp3file)
