@@ -16,10 +16,11 @@
 """Main entry to train and evaluate DeepSpeech model."""
 
 import os
+import datetime
+
 # Disable all GPUs. This prevents errors caused by all workers trying to use the same GPU. 
 # In a real-world application, each worker would be on a different machine.
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 # Reset the 'TF_CONFIG' environment variable
 #os.environ.pop('TF_CONFIG', None)
 
@@ -28,6 +29,7 @@ from absl import app as absl_app
 from absl import flags
 from absl import logging
 import tensorflow as tf
+import tensorflow_cloud as tfc
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # pylint: enable=g-bad-import-order
 
@@ -54,6 +56,9 @@ DEBUG_SHAPES = True
 # Simulate multiple CPUs with virtual devices
 N_VIRTUAL_DEVICES = 1
 
+# Set Cloud GCP bucket name
+GCP_BUCKET = "your-bucket-name"
+MODEL_PATH = "ds2_v0"
 
 def generate_dataset(data_dir):
     """Generate a speech dataset."""
@@ -107,13 +112,16 @@ def evaluate_model(model):
     The evaluation dataset indicated by flags_obj.eval_data_csv is used.
 
     Args:
-        model: Keras model to evaluate.
+        model: Keras trained model to evaluate.
 
     Returns:
         Dictionary with evaluation results:
             'WER': Word Error Rate
             'CER': Character Error Rate
     """
+    # Evaluation
+    logging.info("Starting to evaluate...")
+   
     # Input dataset
     eval_speech_dataset = generate_dataset(flags_obj.eval_data_csv)
     speech_labels       = eval_speech_dataset.speech_labels
@@ -151,11 +159,20 @@ def evaluate_model(model):
         _CER_KEY: total_cer,
     }
 
+    logging.info(f"Evaluation results: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
+
     return eval_results
 
 
-def run_deep_speech(_):
-    """Run DeepSpeech2 training and evaluation loop (TF2/Keras)."""
+def train_model(_):
+    """Run DeepSpeech2 training loop (TF2/Keras).
+    
+    Args:
+        flags.FLAGS from absl 
+
+    Returns:
+        Keras trained model.   
+    """
     
     # Initialise random seed 
     tf.random.set_seed(flags_obj.seed)
@@ -251,19 +268,40 @@ def run_deep_speech(_):
         # )
 
 
-    # Callbacks for training
+    # Set output paths and callbacks for training
+    callbacks = []
+    if tfc.remote():
+        checkpoint_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH, "save_at_{epoch}")
+        save_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH)
+        tensorboard_path = os.path.join(  # Timestamp included to enable timeseries graphs
+            "gs://", GCP_BUCKET, "logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        )
+
+        # TensorBoard will store logs for each epoch and graph performance
+        callbacks.extend(
+            tf.keras.callbacks.TensorBoard(
+                log_dir=tensorboard_path, 
+                histogram_freq=1)
+        )
+         
+    else:
+        checkpoint_path = os.path.join(flags_obj.model_dir, "save_at_{epoch}")
+        save_path = os.path.join(flags_obj.model_dir)
+
     # 'EarlyStopping' to stop training when the model is not enhancing anymore
-    earlystopping_cb = tf.keras.callbacks.EarlyStopping(
-        monitor="val_loss",
-        patience=10, 
-        restore_best_weights=True,
+    callbacks.extend(
+        tf.keras.callbacks.EarlyStopping(
+            monitor="val_loss",
+            patience=10, 
+            restore_best_weights=True)
     )
     # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-    mdlcheckpoint_cb = tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(flags_obj.model_dir, "kmodel.h5"), 
-        monitor="val_accuracy", 
-        verbose=1,
-        save_best_only=True,
+    callbacks.extend(
+        tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_path,
+            monitor="val_accuracy", 
+            verbose=1,
+            save_best_only=True)
     )
 
     # Train/fit
@@ -273,21 +311,17 @@ def run_deep_speech(_):
         x=input_dataset_train,
         validation_data=input_dataset_test,
         epochs=flags_obj.train_epochs,
-        callbacks=[earlystopping_cb, mdlcheckpoint_cb],
+        callbacks=callbacks,
     )
 
+    # Save the model
+    logging.info("Saving trained model...")
+    model.save(save_path)
 
-
-    # Evaluation
-    logging.info("Starting to evaluate...")
-
-    eval_results = evaluate_model(model)
-
-    logging.info(f"Evaluation result: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
-
+    return model
 
 def define_deep_speech_flags():
-    """Add flags for run_deep_speech."""
+    """Add flags for train_model."""
     # Add common flags
     flags_core.define_base(
         data_dir=False,  # we use train_data_csv and test_data_csv instead
@@ -402,11 +436,18 @@ def define_deep_speech_flags():
 
 
 def main(_):
-    run_deep_speech(flags_obj)
+    """Entry point when running locally from absl.app"""
+    model = train_model(flags_obj)
+    evaluate_model(model)
 
+def main_tfc():
+    """Entry point when running with TensorFlow Cloud"""
+    define_deep_speech_flags()
+    flags_obj = flags.FLAGS
+    train_model(flags_obj)
 
 if __name__ == "__main__":
-    logging.set_verbosity(logging.INFO)
+    logging.set_verbosity(logging.DEBUG)
     define_deep_speech_flags()
     flags_obj = flags.FLAGS
     absl_app.run(main)
