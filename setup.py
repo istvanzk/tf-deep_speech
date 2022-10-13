@@ -22,6 +22,7 @@ def main():
 
     tensorflow_pypi_dep = [
         'tf-models-official',
+        'tensorflow_cloud',
         'tensorflow >= 2.8.0'
     ]
     install_requires = install_requires_base + tensorflow_pypi_dep
