@@ -342,7 +342,7 @@ def define_deep_speech_flags():
     flags.adopt_module_key_flags(flags_core)
 
     flags_core.set_defaults(
-        model_dir="model/",
+        model_dir="model_v0/",
         train_epochs=10,
         batch_size=128,
         hooks="")
