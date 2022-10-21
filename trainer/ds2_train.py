@@ -29,7 +29,7 @@ from absl import app as absl_app
 from absl import flags
 from absl import logging
 import tensorflow as tf
-import tensorflow_cloud as tfc
+#import tensorflow_cloud as tfc
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # pylint: enable=g-bad-import-order
 
@@ -57,8 +57,8 @@ DEBUG_SHAPES = True
 N_VIRTUAL_DEVICES = 1
 
 # Set Cloud GCP bucket name
-GCP_BUCKET = "your-bucket-name"
-MODEL_PATH = "ds2_v0"
+#GCP_BUCKET = "ds_train"
+#MODEL_PATH = "model"
 
 def generate_dataset(data_dir):
     """Generate a speech dataset."""
@@ -270,23 +270,23 @@ def train_model(_):
 
     # Set output paths and callbacks for training
     callbacks = []
-    if tfc.remote():
-        checkpoint_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH, "save_at_{epoch}")
-        save_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH)
-        tensorboard_path = os.path.join(  # Timestamp included to enable timeseries graphs
-            "gs://", GCP_BUCKET, "logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        )
+    # if tfc.remote():
+    #     checkpoint_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH, "save_at_{epoch}")
+    #     save_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH)
+    #     tensorboard_path = os.path.join(  # Timestamp included to enable timeseries graphs
+    #         "gs://", GCP_BUCKET, "logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    #     )
 
-        # TensorBoard will store logs for each epoch and graph performance
-        callbacks.extend(
-            tf.keras.callbacks.TensorBoard(
-                log_dir=tensorboard_path, 
-                histogram_freq=1)
-        )
+    #     # TensorBoard will store logs for each epoch and graph performance
+    #     callbacks.extend(
+    #         tf.keras.callbacks.TensorBoard(
+    #             log_dir=tensorboard_path, 
+    #             histogram_freq=1)
+    #     )
          
-    else:
-        checkpoint_path = os.path.join(flags_obj.model_dir, "save_at_{epoch}")
-        save_path = os.path.join(flags_obj.model_dir)
+    # else:
+    checkpoint_path = os.path.join(flags_obj.model_dir, "save_at_{epoch}")
+    save_path = os.path.join(flags_obj.model_dir)
 
     # 'EarlyStopping' to stop training when the model is not enhancing anymore
     callbacks.extend(
@@ -440,11 +440,11 @@ def main(_):
     model = train_model(flags_obj)
     evaluate_model(model)
 
-def main_tfc():
-    """Entry point when running with TensorFlow Cloud"""
-    define_deep_speech_flags()
-    flags_obj = flags.FLAGS
-    train_model(flags_obj)
+# def main_tfc():
+#     """Entry point when running with TensorFlow Cloud"""
+#     define_deep_speech_flags()
+#     flags_obj = flags.FLAGS
+#     train_model(flags_obj)
 
 if __name__ == "__main__":
     logging.set_verbosity(logging.DEBUG)
