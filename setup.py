@@ -54,7 +54,7 @@ def main():
             'Operating System :: OS Independent',
         ],
         #package_dir={'': 'trainer'},
-        packages=['traner', 'model', 'data'],
+        packages=['trainer', 'model', 'data'],
         python_requires='>=3.8, <4',
         install_requires=install_requires,
         # If there are data files included in your packages that need to be
