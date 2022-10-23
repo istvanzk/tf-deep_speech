@@ -44,8 +44,21 @@ from official.common import distribute_utils as distribution_utils
 from official.utils.misc import model_helpers
 
 # Default vocabulary file
-_VOCABULARY_FILE = os.path.join(
-    os.path.dirname(__file__), "data/vocabulary-hu.txt")
+_VOCABULARY_FILE = "../data/vocabulary-hu.txt"
+
+# Default dataset path
+_DATA_DIR = "../data/cv-corpus-8.0-2022-01-19/hu"
+# Default WAV files path under _DATA_DIR
+_SPEECH_DIR = "clips-wav"
+
+# Default csv file names
+_TRAIN_CSV = "train.csv"
+_TEST_CSV = "test.csv"
+_DEV_CSV = "dev.csv"
+
+# Default output model path
+_MODEL_DIR = "../model_v0"
+
 # Evaluation metrics
 _WER_KEY = "WER"
 _CER_KEY = "CER"
@@ -55,10 +68,6 @@ DEBUG_SHAPES = True
 
 # Simulate multiple CPUs with virtual devices
 N_VIRTUAL_DEVICES = 1
-
-# Set Cloud GCP bucket name
-#GCP_BUCKET = "ds_train"
-#MODEL_PATH = "model"
 
 def generate_dataset(data_dir):
     """Generate a speech dataset."""
@@ -71,6 +80,7 @@ def generate_dataset(data_dir):
         audio_conf,
         data_dir,
         flags_obj.vocabulary_file,
+        os.path.join(flags_obj.data_dir, _SPEECH_DIR),
         flags_obj.sortagrad
     )
     speech_dataset = dataset.DeepSpeechDataset(train_data_conf)
@@ -193,8 +203,8 @@ def train_model(_):
 
     # Data preprocessing
     logging.info("Data preprocessing and distribution...")
-    train_speech_dataset = generate_dataset(flags_obj.train_data_csv)
-    test_speech_dataset = generate_dataset(flags_obj.test_data_csv)
+    train_speech_dataset = generate_dataset(os.path.join(flags_obj.data_dir, flags_obj.train_data_csv))
+    test_speech_dataset = generate_dataset(os.path.join(flags_obj.data_dir, flags_obj.test_data_csv))
     
     # Number of label classes. Label string is generated from the --vocabulary_file file
     num_classes = len(train_speech_dataset.speech_labels)
@@ -342,7 +352,7 @@ def define_deep_speech_flags():
     flags.adopt_module_key_flags(flags_core)
 
     flags_core.set_defaults(
-        model_dir="model_v0/",
+        model_dir=_MODEL_DIR,
         train_epochs=10,
         batch_size=128,
         hooks="")
@@ -352,20 +362,26 @@ def define_deep_speech_flags():
         name="seed", default=1,
         help=flags_core.help_wrap("The random seed."))
 
+    # Input data flags
+    flags.DEFINE_string(
+        name="data_dir",
+        default=_DATA_DIR,
+        help=flags_core.help_wrap("The file path of the datasets."))
+
     flags.DEFINE_string(
         name="train_data_csv",
-        default="data/librispeech_data/train-clean/LibriSpeech/train-clean.csv",
-        help=flags_core.help_wrap("The csv file path of train dataset."))
+        default=_TRAIN_CSV,
+        help=flags_core.help_wrap("The csv file path of the train dataset."))
 
     flags.DEFINE_string(
         name="test_data_csv",
-        default="data/librispeech_data/test-clean/LibriSpeech/test-clean.csv",
-        help=flags_core.help_wrap("The csv file path of test dataset."))
+        default=_TEST_CSV,
+        help=flags_core.help_wrap("The csv file path of the test dataset."))
 
     flags.DEFINE_string(
         name="eval_data_csv",
-        default="data/librispeech_data/dev-clean/LibriSpeech/dev-clean.csv",
-        help=flags_core.help_wrap("The csv file path of evaluation dataset."))
+        default=_DEV_CSV,
+        help=flags_core.help_wrap("The csv file path of the evaluation dataset."))
 
     flags.DEFINE_bool(
         name="sortagrad", default=True,
@@ -374,60 +390,73 @@ def define_deep_speech_flags():
             "batch_wise shuffling for the first epoch."))
 
     flags.DEFINE_integer(
-        name="sample_rate", default=16000,
+        name="sample_rate", 
+        default=16000,
         help=flags_core.help_wrap("The sample rate for audio."))
 
     flags.DEFINE_integer(
-        name="window_ms", default=20,
+        name="window_ms", 
+        default=20,
         help=flags_core.help_wrap("The frame length for spectrogram."))
 
     flags.DEFINE_integer(
-        name="stride_ms", default=10,
+        name="stride_ms", 
+        default=10,
         help=flags_core.help_wrap("The frame step."))
 
     flags.DEFINE_integer(
-        name="num_feature_bins", default=161,
+        name="num_feature_bins", 
+        default=161,
         help=flags_core.help_wrap("The size of the spectrogram."))
 
     flags.DEFINE_string(
-        name="vocabulary_file", default=_VOCABULARY_FILE,
+        name="vocabulary_file", 
+        default=_VOCABULARY_FILE,
         help=flags_core.help_wrap("The file path of vocabulary file."))
 
     # RNN related flags
     flags.DEFINE_integer(
-        name="rnn_hidden_size", default=800,
+        name="rnn_hidden_size", 
+        default=800,
         help=flags_core.help_wrap("The hidden size of RNNs."))
 
     flags.DEFINE_integer(
-        name="rnn_hidden_layers", default=2,
+        name="rnn_hidden_layers", 
+        default=2,
         help=flags_core.help_wrap("The number of RNN layers."))
 
     flags.DEFINE_bool(
-        name="use_bias", default=True,
+        name="use_bias", 
+        default=True,
         help=flags_core.help_wrap("Use bias in the last fully-connected layer"))
 
     flags.DEFINE_bool(
-        name="is_bidirectional", default=True,
+        name="is_bidirectional", 
+        default=True,
         help=flags_core.help_wrap("If rnn unit is bidirectional"))
 
     flags.DEFINE_enum(
-        name="rnn_type", default="gru",
+        name="rnn_type", 
+        default="gru",
         enum_values=SUPPORTED_RNNS.keys(),
         case_sensitive=False,
         help=flags_core.help_wrap("Type of RNN cell."))
 
     # Training related flags
     flags.DEFINE_float(
-        name="learning_rate", default=5e-4,
+        name="learning_rate", 
+        default=5e-4,
         help=flags_core.help_wrap("The initial learning rate."))
 
     flags.DEFINE_bool(
-        name = "plot_model", default=True,
+        name = "plot_model", 
+        default=True,
         help=flags_core.help_wrap("If model is to be shown, ploted and saved to ds2_model.png"))
 
     # Evaluation metrics threshold
     flags.DEFINE_float(
-        name="wer_threshold", default=None,
+        name="wer_threshold", 
+        default=None,
         help=flags_core.help_wrap(
             "If passed, training will stop when the evaluation metric WER is "
             "greater than or equal to wer_threshold. For libri speech dataset "
