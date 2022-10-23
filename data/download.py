@@ -30,7 +30,7 @@ import unicodedata
 from absl import app as absl_app
 from absl import flags as absl_flags
 import pandas
-from six.moves import urllib
+from urllib import request
 from sox import Transformer
 import tensorflow as tf
 from absl import logging
@@ -81,7 +81,7 @@ def download_and_extract(directory, url):
                 tar_filepath, 100.0 * count * block_size / total_size))
             sys.stdout.flush()
 
-        urllib.request.urlretrieve(url, tar_filepath, _progress)
+        request.urlretrieve(url, tar_filepath, _progress)
         print()
         statinfo = os.stat(tar_filepath)
         logging.info(
@@ -203,7 +203,7 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
     logging.info("Preprocessing CV2 audio and transcript for: %s" % source_name)
 
     source_dir = os.path.join(input_dir, "clips")
-    target_dir = os.path.join(input_dir, target_name)
+    target_dir = os.path.join(output_dir, target_name)
     output_file = source_name + ".csv"
 
     if not tf.io.gfile.exists(target_dir):
@@ -233,14 +233,15 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
                 transcript = transcript.replace("’", "")
 
                 # Convert MP3 to WAV
-                mp3_file = os.path.join(source_dir, mp3file)
-                wav_file = os.path.join(target_dir, mp3file.replace("mp3", "wav"))
-                if not tf.io.gfile.exists(wav_file):
-                    tfm.build(mp3_file, wav_file)
-                wav_filesize = os.path.getsize(wav_file)
+                wav_filename = mp3file.replace("mp3", "wav")
+                wav_file_path = os.path.join(target_dir, wav_filename)
+                if not tf.io.gfile.exists(wav_file_path):
+                    mp3_file = os.path.join(source_dir, mp3file)
+                    tfm.build(mp3_file, wav_file_path)
+                wav_filesize = os.path.getsize(wav_file_path)
 
-                files.append((os.path.abspath(wav_file), wav_filesize, transcript))
-
+                # Store info (wav file name _without_ path!)
+                files.append((wav_filename, wav_filesize, transcript))
 
     # Write to CSV file which contains three columns:
     # "wav_filename", "wav_filesize", "transcript".
@@ -248,7 +249,7 @@ def convert_audio_and_split_transcript_cv2(input_dir, source_name, target_name, 
     df = pandas.DataFrame(
         data=files, columns=["wav_filename", "wav_filesize", "transcript"])
     df.to_csv(csv_file_path, index=False, sep="\t")
-    logging.info("Successfully generated csv file {}".format(csv_file_path))
+    logging.info(f"Successfully generated csv file: {csv_file_path} with {len(files)} entries")
 
 
 def download_and_process_datasets(directory, datasets):
@@ -283,8 +284,7 @@ def process_datasets_cv2(directory, datasets):
         logging.info("Preparing dataset %s", dataset)
         
         convert_audio_and_split_transcript_cv2(
-            directory, dataset, "clips-wav",
-            directory)
+            directory, dataset, "clips-wav", directory)
 
 def define_data_download_flags():
     """Define flags for data downloading."""
