@@ -15,6 +15,7 @@
 # ==============================================================================
 """Generate tf.data.Dataset object for deep speech training/evaluation."""
 
+import os
 import math
 import random
 # pylint: disable=g-bad-import-order
@@ -56,7 +57,7 @@ class AudioConfig(object):
 class DatasetConfig(object):
     """Config class for generating the DeepSpeechDataset."""
 
-    def __init__(self, audio_config, data_path, vocab_file_path, sortagrad):
+    def __init__(self, audio_config, data_path, vocab_file_path, speech_files_path, sortagrad):
         """Initialize the configs for deep speech dataset.
 
         Args:
@@ -76,23 +77,8 @@ class DatasetConfig(object):
         assert tf.io.gfile.exists(vocab_file_path)
         self.data_path = data_path
         self.vocab_file_path = vocab_file_path
+        self.speech_files_path = speech_files_path
         self.sortagrad = sortagrad
-
-
-def _normalize_audio_feature(audio_feature):
-    """Perform mean and variance normalization on the spectrogram feature.
-
-    Args:
-        audio_feature: a numpy array for the spectrogram feature.
-
-    Returns:
-        a numpy array of the normalized spectrogram.
-    """
-    mean = np.mean(audio_feature, axis=0)
-    var = np.var(audio_feature, axis=0)
-    normalized = (audio_feature - mean) / (np.sqrt(var) + 1e-6)
-
-    return normalized
 
 
 def _preprocess_audio(audio_file_path, audio_featurizer, normalize):
@@ -110,6 +96,7 @@ def _preprocess_audio(audio_file_path, audio_featurizer, normalize):
         audio_featurizer.window_ms, None, audio_featurizer.fft_length)
  
     # Normalisation
+    # Perform mean and variance normalization on the spectrogram feature
     if normalize:
         means = tf.math.reduce_mean(spectrogram, 1, keepdims=True)
         stddevs = tf.math.reduce_std(spectrogram, 1, keepdims=True)
@@ -135,7 +122,7 @@ def _preprocess_audio(audio_file_path, audio_featurizer, normalize):
     # return feature
 
 
-def _preprocess_data(file_path):
+def _preprocess_data(file_path, speech_files_path):
     """Generate a list of tuples (wav_filename, wav_filesize, transcript).
 
     Each dataset file contains three columns: "wav_filename", "wav_filesize",
@@ -146,6 +133,7 @@ def _preprocess_data(file_path):
 
     Args:
         file_path: a string specifying the csv file path for a dataset.
+        speech_files_path: a string specifying the path for the speech files.
 
     Returns:
         A list of tuples (wav_filename, wav_filesize, transcript) sorted by
@@ -162,6 +150,8 @@ def _preprocess_data(file_path):
             if row[0] == "wav_filename":
                 continue
             else:
+                # Add the full path to the speech data files
+                row[0] = os.path.join(speech_files_path, row[0])
                 lines.append(row)       
         
     # with tf.io.gfile.GFile(file_path, "r") as f:
@@ -196,12 +186,17 @@ class DeepSpeechDataset(object):
             window_ms=self.config.audio_config.window_ms,
             stride_ms=self.config.audio_config.stride_ms,
             num_feature_bins=self.config.audio_config.num_feature_bins)
+        
         # Instantiate text feature extractor.
         self.text_featurizer = featurizer.TextFeaturizer(
             vocab_file=self.config.vocab_file_path)
 
+        # The entries in the data set, tuples (wav_filename, wav_filesize, transcript)
+        self.entries = _preprocess_data(self.config.data_path, self.config.speech_files_path)
+
+        # The labels
         self.speech_labels = self.text_featurizer.speech_labels
-        self.entries = _preprocess_data(self.config.data_path)
+
         # The generated spectrogram size/bins
         self.num_feature_bins = self.config.audio_config.num_feature_bins
 
