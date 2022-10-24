@@ -62,7 +62,11 @@ def main():
         package_data={
             'tf-deep_speech': [
                 'VERSION',
+                'run_ds2_train_cloud.sh',
             ],
+            'data':[
+                'vocabulary-hu.txt',
+            ]
         },
     )
 
