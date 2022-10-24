@@ -17,7 +17,3 @@ echo "Model training and evaluation..."
 start=`date +%s`
 
 nohup python trainer/ds2_train.py --data_dir=$data_bucket --vocabulary_file=$voc_file --model_dir=$model_dir --seed=1 >$log_file 2>&1&
-
-end=`date +%s`
-runtime=$((end-start))
-echo "Model training time is" $runtime "seconds."
