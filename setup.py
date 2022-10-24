@@ -60,7 +60,7 @@ def main():
         # If there are data files included in your packages that need to be
         # installed, specify them here.
         package_data={
-            'tf-deep_speech': [
+            '.': [
                 'VERSION',
                 'run_ds2_train_cloud.sh',
             ],
