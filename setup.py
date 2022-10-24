@@ -57,13 +57,15 @@ def main():
         packages=['trainer', 'model', 'data'],
         python_requires='>=3.8, <4',
         install_requires=install_requires,
-        # If there are data files included in your packages that need to be
-        # installed, specify them here.
-        package_data={
-            '.': [
+        # Install additional data files
+        data_files=[
+            ('.', [
                 'VERSION',
                 'run_ds2_train_cloud.sh',
-            ],
+            ])
+        ],
+        # Install additional package data files
+        package_data={
             'data':[
                 'vocabulary-hu.txt',
             ]
