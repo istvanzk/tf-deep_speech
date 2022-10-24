@@ -288,7 +288,7 @@ def train_model(_):
     #     )
 
     #     # TensorBoard will store logs for each epoch and graph performance
-    #     callbacks.extend(
+    #     callbacks.append(
     #         tf.keras.callbacks.TensorBoard(
     #             log_dir=tensorboard_path, 
     #             histogram_freq=1)
@@ -299,14 +299,14 @@ def train_model(_):
     save_path = os.path.join(flags_obj.model_dir)
 
     # 'EarlyStopping' to stop training when the model is not enhancing anymore
-    callbacks.extend(
+    callbacks.append(
         tf.keras.callbacks.EarlyStopping(
             monitor="val_loss",
             patience=10, 
             restore_best_weights=True)
     )
     # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-    callbacks.extend(
+    callbacks.append(
         tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path,
             monitor="val_accuracy", 
