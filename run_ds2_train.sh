@@ -13,11 +13,11 @@ model_dir="model_v0"
 # Log file
 log_file=log_`date +%Y-%m-%d`
 
-echo "Model training and evaluation..."
 start=`date +%s`
+echo "Model training and evaluation started on " $start
 
-nohup python trainer/ds2_train.py --data_dir=$data_dir --vocabulary_file=$voc_file --model_dir=$model_dir --num_gpus=0 --batch_size=64 --seed=1 >$log_file 2>&1
+nohup python trainer/ds2_train.py --data_dir=$data_dir --vocabulary_file=$voc_file --model_dir=$model_dir --num_gpus=0 --batch_size=64 --seed=1 >$log_file 2>&1 &
 
-end=`date +%s`
-runtime=$((end-start))
-echo "Model training time is" $runtime "seconds."
+#end=`date +%s`
+#runtime=$((end-start))
+#echo "Model training time is" $runtime "seconds."
