@@ -44,7 +44,7 @@ from official.common import distribute_utils as distribution_utils
 from official.utils.misc import model_helpers
 
 # Default vocabulary file
-_VOCABULARY_FILE = "../data/vocabulary-hu.txt"
+_VOCABULARY_FILE = "data/vocabulary-hu.txt"
 
 # Default dataset path
 _DATA_DIR = "data/cv-corpus-8.0-2022-01-19/hu"
