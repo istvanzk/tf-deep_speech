@@ -47,7 +47,7 @@ from official.utils.misc import model_helpers
 _VOCABULARY_FILE = "../data/vocabulary-hu.txt"
 
 # Default dataset path
-_DATA_DIR = "../data/cv-corpus-8.0-2022-01-19/hu"
+_DATA_DIR = "data/cv-corpus-8.0-2022-01-19/hu"
 # Default WAV files path under _DATA_DIR
 _SPEECH_DIR = "clips-wav"
 
@@ -57,7 +57,7 @@ _TEST_CSV = "test.csv"
 _DEV_CSV = "dev.csv"
 
 # Default output model path
-_MODEL_DIR = "../model_v0"
+_MODEL_DIR = "model_v0"
 
 # Evaluation metrics
 _WER_KEY = "WER"

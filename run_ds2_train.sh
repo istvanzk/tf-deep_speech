@@ -2,7 +2,7 @@
 # Script to run _locally_  the Deep Speech 2 model training with Common Voice corpus (Mozilla)
 
 # Input data files (CSV and WAV)
-data_dir="/data/cv-corpus-8.0-2022-01-19/hu"
+data_dir="data/cv-corpus-8.0-2022-01-19/hu"
 
 # Vocabulary file
 voc_file="data/vocabulary-hu.txt"
