@@ -13,7 +13,7 @@ model_dir="model_v0"
 # Log file
 log_file=log_`date +%Y-%m-%d`
 
-echo "Model training and evaluation..."
 start=`date +%s`
+echo "Model training and evaluation started on " $start
 
-nohup python trainer/ds2_train.py --data_dir=$data_bucket --vocabulary_file=$voc_file --model_dir=$model_dir --seed=1 >$log_file 2>&1&
+nohup python trainer/ds2_train.py --data_dir=$data_bucket --vocabulary_file=$voc_file --model_dir=$model_dir --seed=1 >$log_file 2>&1 & 
