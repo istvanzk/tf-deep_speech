@@ -38,20 +38,21 @@ import data.dataset as dataset
 import decoder
 from model.keras_model import ds2_model, SUPPORTED_RNNS
 
-# TF2 modules
+# Modules from tf-models-official
 from official.utils.flags import core as flags_core
 from official.common import distribute_utils as distribution_utils
-from official.utils.misc import model_helpers
-
-# Default vocabulary file
-_VOCABULARY_FILE = "data/vocabulary-hu.txt"
+#from official.utils.misc import model_helpers
 
 # Default dataset path
-_DATA_DIR = "data/cv-corpus-8.0-2022-01-19/hu"
+_DATA_DIR = "./data/cv-corpus-8.0-2022-01-19/hu"
+
+# Default vocabulary file under _DATA_DIR 
+_VOCABULARY_FILE = "vocabulary-hu.txt"
+
 # Default WAV files path under _DATA_DIR
 _SPEECH_DIR = "clips-wav"
 
-# Default csv file names
+# Default csv file names under _DATA_DIR
 _TRAIN_CSV = "train.csv"
 _TEST_CSV = "test.csv"
 _DEV_CSV = "dev.csv"
@@ -69,7 +70,7 @@ DEBUG_SHAPES = True
 # Simulate multiple CPUs with virtual devices
 N_VIRTUAL_DEVICES = 1
 
-def generate_dataset(data_dir):
+def generate_dataset(dataset_csv):
     """Generate a speech dataset."""
     audio_conf = dataset.AudioConfig(sample_rate=flags_obj.sample_rate,
                                     window_ms=flags_obj.window_ms,
@@ -78,8 +79,8 @@ def generate_dataset(data_dir):
                                     normalize=True)
     train_data_conf = dataset.DatasetConfig(
         audio_conf,
-        data_dir,
-        flags_obj.vocabulary_file,
+        os.path.join(flags_obj.data_dir, dataset_csv),
+        os.path.join(flags_obj.data_dir, flags_obj.vocabulary_file),
         os.path.join(flags_obj.data_dir, _SPEECH_DIR),
         flags_obj.sortagrad
     )
@@ -203,8 +204,8 @@ def train_model(_):
 
     # Data preprocessing
     logging.info("Data preprocessing and distribution...")
-    train_speech_dataset = generate_dataset(os.path.join(flags_obj.data_dir, flags_obj.train_data_csv))
-    test_speech_dataset = generate_dataset(os.path.join(flags_obj.data_dir, flags_obj.test_data_csv))
+    train_speech_dataset = generate_dataset(flags_obj.train_data_csv)
+    test_speech_dataset = generate_dataset(flags_obj.test_data_csv)
     
     # Number of label classes. Label string is generated from the --vocabulary_file file
     num_classes = len(train_speech_dataset.speech_labels)
@@ -213,7 +214,12 @@ def train_model(_):
     # Uses MirroredStrategy as default, distribution_strategy="mirrored"
     # MirroredStrategy trains your model on multiple GPUs on a single machine/worker. 
     # For synchronous training on many GPUs on multiple workers, use distribution_strategy="multi_worker_mirrored"
-    distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus)     
+    distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus) 
+    # if num_gpus == 0:
+    #   devices = ["device:CPU:0"]
+    # else:
+    #   devices = ["device:GPU:%d" % i for i in range(num_gpus)]
+    # distribution_strategy = tf.distribute.MirroredStrategy(devices=devices)   
 
     # Input datasets (generator functions)
     # The input batch of data specified in flags_obj.batch_size (called global batch) is automatically split 
