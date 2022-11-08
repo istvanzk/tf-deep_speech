@@ -16,7 +16,7 @@
 """Utility class for extracting features from the text and audio input."""
 
 import tensorflow as tf
-import codecs
+#import codecs
 import unicodedata
 import numpy as np
 
@@ -122,7 +122,8 @@ class TextFeaturizer(object):
 
     def __init__(self, vocab_file):
         lines = []
-        with codecs.open(vocab_file, "r", "utf-8") as fin:
+        #with codecs.open(vocab_file, "r", "utf-8") as fin:
+        with tf.io.gfile.GFile(vocab_file, "r") as fin:
             lines.extend(fin.readlines())
         self.token_to_index = {}
         self.index_to_token = {}
