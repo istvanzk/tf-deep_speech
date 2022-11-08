@@ -140,27 +140,35 @@ def _preprocess_data(file_path, speech_files_path):
         file_size.
     """
     logging.info("Loading data set {}".format(file_path))
-    import csv
-    with open(file_path, newline='', encoding="utf8") as csvfile:
-        # The metadata file is tab separated.
-        csvreader = csv.reader(csvfile, delimiter="\t")
-        lines =[]
-        for row in csvreader:
-            # Skip the csv header 
+    # import csv
+    # with open(file_path, newline='', encoding="utf8") as csvfile:
+    #     # The metadata file is tab separated.
+    #     csvreader = csv.reader(csvfile, delimiter="\t")
+    #     lines =[]
+    #     for row in csvreader:
+    #         # Skip the csv header 
+    #         if row[0] == "wav_filename":
+    #             continue
+    #         else:
+    #             # Add the full path to the speech data files
+    #             row[0] = os.path.join(speech_files_path, row[0])
+    #             lines.append(row)       
+        
+    with tf.io.gfile.GFile(file_path, "r") as f:
+        all_rows = f.readlines()
+        lines=[]
+        for row in all_rows:
+            # The metadata file is tab separated.
+            row = row.split("\t", 2)
+
+            # Skip the csv header
             if row[0] == "wav_filename":
                 continue
             else:
                 # Add the full path to the speech data files
                 row[0] = os.path.join(speech_files_path, row[0])
                 lines.append(row)       
-        
-    # with tf.io.gfile.GFile(file_path, "r") as f:
-    #   lines = f.read().splitlines()
-    # # Skip the csv header in lines[0].
-    # lines = lines[1:]
-    # # The metadata file is tab separated.
-    # lines = [line.split("\t", 2) for line in lines]
-    
+  
     # import unicodedata
     # lines = [unicodedata.normalize("NFKD",line).encode("utf-8").decode("utf-8").split("\t", 2) for line in lines]  
 
