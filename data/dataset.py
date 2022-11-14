@@ -327,7 +327,8 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
                 "input_length": tf.TensorShape([1]),
                 "labels_length": tf.TensorShape([1])
             },
-            tf.TensorShape([None]))
+            tf.TensorShape([None])),
+        drop_remainder=True,
     )
 
     # Prefetch to improve speed of input pipeline
