@@ -17,6 +17,7 @@
 
 import os
 import datetime
+import json
 
 # Disable all GPUs. This prevents errors caused by all workers trying to use the same GPU. 
 # In a real-world application, each worker would be on a different machine.
@@ -43,23 +44,6 @@ from official.utils.flags import core as flags_core
 from official.common import distribute_utils as distribution_utils
 #from official.utils.misc import model_helpers
 
-# Default dataset path
-_DATA_DIR = "./data/cv-corpus-8.0-2022-01-19/hu"
-
-# Default vocabulary file under _DATA_DIR 
-_VOCABULARY_FILE = "vocabulary-hu.txt"
-
-# Default WAV files path under _DATA_DIR
-_SPEECH_DIR = "clips-wav"
-
-# Default csv file names under _DATA_DIR
-_TRAIN_CSV = "train.csv"
-_TEST_CSV = "test.csv"
-_DEV_CSV = "dev.csv"
-
-# Default output model path
-_MODEL_DIR = "model_v0"
-
 # Evaluation metrics
 _WER_KEY = "WER"
 _CER_KEY = "CER"
@@ -81,7 +65,7 @@ def generate_dataset(dataset_csv):
         audio_conf,
         os.path.join(flags_obj.data_dir, dataset_csv),
         os.path.join(flags_obj.data_dir, flags_obj.vocabulary_file),
-        os.path.join(flags_obj.data_dir, _SPEECH_DIR),
+        os.path.join(flags_obj.data_dir, flags_obj.speech_dir),
         flags_obj.sortagrad
     )
     speech_dataset = dataset.DeepSpeechDataset(train_data_conf)
@@ -357,16 +341,56 @@ def define_deep_speech_flags():
     flags_core.define_benchmark()
     flags.adopt_module_key_flags(flags_core)
 
+    #
+    # Deafult parameter values configurable from JSON or args
+    #
+    # Default dataset path
+    _DATA_DIR = "./data/cv-corpus-8.0-2022-01-19/hu"
+
+    # Default vocabulary file under _DATA_DIR 
+    _VOCABULARY_FILE = "vocabulary-hu.txt"
+
+    # Default WAV files path under _DATA_DIR
+    _SPEECH_DIR = "clips-wav"
+
+    # Default csv file names under _DATA_DIR
+    _TRAIN_CSV = "train.csv"
+    _TEST_CSV = "test.csv"
+    _DEV_CSV = "dev.csv"
+
+    # Default output model path
+    _MODEL_DIR = "model_v0"
+
+    # Default training hyper-parameters
+    _EPOCHS = 10
+    _BATCH = 64
+
+    # Load parameter values from JSON file, if it exist
+    # Overwrites the above defaults!
+    if tf.io.gfile.exists("config.json"):
+        with open("config.json", 'r') as f:
+            params = json.load(f)
+
+        _DATA_DIR   = params["data_dir"]
+        _SPEECH_DIR = params["speech_subdir"]
+        _VOCABULARY_FILE = params["vocabulary_txt"]
+        _TRAIN_CSV  = params["train_csv"]
+        _TEST_CSV   = params["test_csv"]
+        _DEV_CSV    = params["dev_csv"]
+        _MODEL_DIR  = params["model_dir"]
+
+        _EPOCHS = params["train_epochs"]
+        _BATCH  = params["batch_size"]
+
+    #
+    # Parameters configurable from JSON or args
+    #
+    # Training parameters
     flags_core.set_defaults(
         model_dir=_MODEL_DIR,
-        train_epochs=10,
-        batch_size=128,
+        train_epochs=_EPOCHS,
+        batch_size=_BATCH,
         hooks="")
-
-    # Deep speech flags
-    flags.DEFINE_integer(
-        name="seed", default=1,
-        help=flags_core.help_wrap("The random seed."))
 
     # Input data flags
     flags.DEFINE_string(
@@ -377,17 +401,35 @@ def define_deep_speech_flags():
     flags.DEFINE_string(
         name="train_data_csv",
         default=_TRAIN_CSV,
-        help=flags_core.help_wrap("The csv file path of the train dataset."))
+        help=flags_core.help_wrap("The csv file path of the train dataset under data_dir."))
 
     flags.DEFINE_string(
         name="test_data_csv",
         default=_TEST_CSV,
-        help=flags_core.help_wrap("The csv file path of the test dataset."))
+        help=flags_core.help_wrap("The csv file path of the test dataset under data_dir."))
 
     flags.DEFINE_string(
         name="eval_data_csv",
         default=_DEV_CSV,
-        help=flags_core.help_wrap("The csv file path of the evaluation dataset."))
+        help=flags_core.help_wrap("The csv file path of the evaluation dataset under data_dir."))
+
+    flags.DEFINE_string(
+        name= "speech_dir",
+        default=_SPEECH_DIR,
+        help=flags_core.help_wrap("The speech files path under under data_dir"))
+
+    flags.DEFINE_string(
+        name="vocabulary_file", 
+        default=_VOCABULARY_FILE,
+        help=flags_core.help_wrap("The vocabulary file path under data_dir."))
+
+    #
+    # Parameters configurable only as args
+    #
+    # Deep speech flags
+    flags.DEFINE_integer(
+        name="seed", default=1,
+        help=flags_core.help_wrap("The random seed."))
 
     flags.DEFINE_bool(
         name="sortagrad", default=True,
@@ -414,11 +456,6 @@ def define_deep_speech_flags():
         name="num_feature_bins", 
         default=161,
         help=flags_core.help_wrap("The size of the spectrogram."))
-
-    flags.DEFINE_string(
-        name="vocabulary_file", 
-        default=_VOCABULARY_FILE,
-        help=flags_core.help_wrap("The file path of vocabulary file."))
 
     # RNN related flags
     flags.DEFINE_integer(
