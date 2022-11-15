@@ -1,7 +1,12 @@
 # DeepSpeech2 Model fork [05.04.2022]
 ![Exp](https://img.shields.io/badge/Fork-experimental-orange.svg)
+![Py](https://img.shields.io/badge/python-3.8-green)
+![Py](https://img.shields.io/badge/python-3.9-green)
 [![TensorFlow 2.9](https://img.shields.io/badge/TensorFlow-2.9-FF6F00?logo=tensorflow)](https://github.com/tensorflow/tensorflow/releases/tag/v2.9.0)
-v0.1b2
+![Keras](https://img.shields.io/badge/KerasAPI-OK-green)
+![GC](https://img.shields.io/badge/GoogleCloud_VertexAI-OK-green)
+![Docker](https://img.shields.io/badge/Docker-OK-green)
+![Ver](https://img.shields.io/badge/version-0.1b2-lightgrey)
 
 This is a stand-alone fork for the Tensorflow [DeepSpeech2](https://github.com/tensorflow/models/tree/master/research/deep_speech) code.
 
