@@ -1,9 +1,11 @@
 # DeepSpeech2 Model fork [05.04.2022]
 ![Exp](https://img.shields.io/badge/Fork-experimental-orange.svg)
+[![TensorFlow 2.9](https://img.shields.io/badge/TensorFlow-2.9-FF6F00?logo=tensorflow)](https://github.com/tensorflow/tensorflow/releases/tag/v2.9.0)
+v0.1b2
 
 This is a stand-alone fork for the Tensorflow [DeepSpeech2](https://github.com/tensorflow/models/tree/master/research/deep_speech) code.
 
-Development plans:
+Development plans & status:
 
 - [x] Updates to work with [tf-models-official](https://pypi.org/project/tf-models-official/) python package and with TF2.8
 - [x] Updates to use [absl-py](https://abseil.io/docs/python/) python package
