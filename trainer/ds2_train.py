@@ -29,9 +29,10 @@ import json
 from absl import app as absl_app
 from absl import flags
 from absl import logging
+logging.set_verbosity(logging.ERROR)
 import tensorflow as tf
 #import tensorflow_cloud as tfc
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+#tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # pylint: enable=g-bad-import-order
 
 # Local modules
