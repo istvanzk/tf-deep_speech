@@ -62,6 +62,11 @@ def generate_dataset(dataset_csv):
                                     stride_ms=flags_obj.stride_ms,
                                     num_feature_bins=flags_obj.num_feature_bins,
                                     normalize=True)
+    
+    logging.info(f"Dataset CSV: {os.path.join(flags_obj.data_dir, dataset_csv)}")
+    logging.info(f"Vocabulary: {os.path.join(flags_obj.data_dir, flags_obj.vocabulary_file)}")
+    logging.info(f"Speech data: {os.path.join(flags_obj.data_dir, flags_obj.speech_dir)}")
+
     train_data_conf = dataset.DatasetConfig(
         audio_conf,
         os.path.join(flags_obj.data_dir, dataset_csv),
@@ -188,7 +193,7 @@ def train_model(_):
         print("%d) %s" % (i, device))
 
     # Data preprocessing
-    logging.info("Data preprocessing and distribution...")
+    logging.info("Data preprocessing...")
     train_speech_dataset = generate_dataset(flags_obj.train_data_csv)
     test_speech_dataset = generate_dataset(flags_obj.test_data_csv)
     
@@ -288,6 +293,9 @@ def train_model(_):
     # else:
     checkpoint_path = os.path.join(flags_obj.model_dir, "save_at_{epoch}")
     save_path = os.path.join(flags_obj.model_dir)
+
+    logging.info(f"Checkpoints: {checkpoint_path}")
+    logging.info(f"Model save: {save_path}")
 
     # 'EarlyStopping' to stop training when the model is not enhancing anymore
     callbacks.append(
