@@ -295,13 +295,13 @@ def train_model(_):
             patience=10, 
             restore_best_weights=True)
     )
-    # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
+    # 'ModelCheckPoint' to always keep the model that has the best val_loss
     callbacks.append(
         tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path,
-            monitor="val_accuracy", 
+            monitor="val_loss", 
             verbose=1,
-            save_best_only=True)
+            save_best_only=False)
     )
 
     # Train/fit
