@@ -380,7 +380,7 @@ def define_deep_speech_flags():
         with open("trainer/config.json", 'r') as f:
             params = json.load(f)
 
-        logging.info("Default parameters read from ccnfig.json")
+        logging.info("Default parameters: trainer/config.json")
         _DATA_DIR   = params["data_dir"]
         _SPEECH_DIR = params["speech_subdir"]
         _VOCABULARY_FILE = params["vocabulary_txt"]
