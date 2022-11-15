@@ -376,10 +376,11 @@ def define_deep_speech_flags():
 
     # Load parameter values from JSON file, if it exist
     # Overwrites the above defaults!
-    if tf.io.gfile.exists("config.json"):
-        with open("config.json", 'r') as f:
+    if tf.io.gfile.exists("trainer/config.json"):
+        with open("trainer/config.json", 'r') as f:
             params = json.load(f)
 
+        logging.info("Default parameters read from ccnfig.json")
         _DATA_DIR   = params["data_dir"]
         _SPEECH_DIR = params["speech_subdir"]
         _VOCABULARY_FILE = params["vocabulary_txt"]
