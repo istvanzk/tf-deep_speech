@@ -1,14 +1,10 @@
 #!/bin/bash
 # Script to run _locally_  the Deep Speech 2 model training with Common Voice corpus (Mozilla)
-
-# Input data files (CSV and WAV)
-data_dir="data/cv-corpus-8.0-2022-01-19/hu"
-
-# Vocabulary file
-voc_file="data/vocabulary-hu.txt"
-
-# Output data
-model_dir="model_v0"
+# Edit the trainer/config.json to set main parameters for:
+# --data_dir
+# --vocabulary_file
+# --model_dir
+# etc.
 
 # Log file
 log_file=log_`date +%Y-%m-%d`
@@ -16,7 +12,7 @@ log_file=log_`date +%Y-%m-%d`
 start=`date +%s`
 echo "Model training and evaluation started on " $start
 
-nohup python trainer/ds2_train.py --data_dir=$data_dir --vocabulary_file=$voc_file --model_dir=$model_dir --num_gpus=0 --batch_size=64 --seed=1 >$log_file 2>&1 &
+nohup python trainer/ds2_train.py  --num_gpus=0 --seed=1 >$log_file 2>&1 &
 
 #end=`date +%s`
 #runtime=$((end-start))
