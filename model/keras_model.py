@@ -168,7 +168,7 @@ class CustomModelCTCLoss(tf.keras.Model):
         # or at the start of `evaluate()`.
         # If you don't implement this property, you have to call
         # `reset_states()` yourself at the time of your choosing.
-        return [loss_tracker]
+        return [loss_tracker, val_loss_tracker]
 
 
 
