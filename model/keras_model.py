@@ -159,7 +159,7 @@ class CustomModelCTCLoss(tf.keras.Model):
         loss = tf.keras.backend.ctc_batch_cost(
             labels, logits, ctc_input_length, features_dict['labels_length'])
 
-        return {'loss': loss}
+        return {'val_loss': loss}
 
         # Update the metrics
         #self.compiled_metrics.update_state(labels, logits)
