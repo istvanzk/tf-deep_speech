@@ -33,7 +33,9 @@ _BATCH_NORM_DECAY = 0.997
 _CONV_FILTERS = 32
 
 
-#loss_tracker = tf.keras.metrics.Mean(name="loss")
+# Create Metric instances to track our loss
+loss_tracker = tf.keras.metrics.Mean(name="loss")
+val_loss_tracker = tf.keras.metrics.Mean(name="val_loss")
 #mae_metric = tf.keras.metrics.MeanAbsoluteError(name="mae")
 
 class CustomModelCTCLoss(tf.keras.Model):
@@ -123,18 +125,12 @@ class CustomModelCTCLoss(tf.keras.Model):
         # Update weights
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
 
-        return {'loss': loss}
+        # Compute our own metrics
+        loss_tracker.update_state(loss)
 
-        # Update the metrics
-        #loss_tracker.update_state(loss)
-        #mae_metric.update_state(y, logits)
-        #return {"loss": loss_tracker.result(), "mae": mae_metric.result()}
+        return {'loss': loss_tracker.result()}
 
-        # Return a dict mapping metric names to current value.
-        # Note that it will include the loss (tracked in self.metrics).
-        #return {m.name: m.result() for m in self.metrics}
 
-    
     def test_step(self, data):
         """Custom testing step function
 
@@ -159,23 +155,20 @@ class CustomModelCTCLoss(tf.keras.Model):
         loss = tf.keras.backend.ctc_batch_cost(
             labels, logits, ctc_input_length, features_dict['labels_length'])
 
-        return {'val_loss': loss}
+        # Compute our own metrics
+        val_loss_tracker.update_state(loss)
 
-        # Update the metrics
-        #self.compiled_metrics.update_state(labels, logits)
+        return {'val_loss': val_loss_tracker.result()}
 
-        # Return a dict mapping metric names to current value.
-        # Note that it will include the loss (tracked in self.metrics).
-        #return {m.name: m.result() for m in self.metrics}
 
-    # @property
-    # def metrics(self):
-    #     # We list our `Metric` objects here so that `reset_states()` can be
-    #     # called automatically at the start of each epoch
-    #     # or at the start of `evaluate()`.
-    #     # If you don't implement this property, you have to call
-    #     # `reset_states()` yourself at the time of your choosing.
-    #     return [loss_tracker, mae_metric]
+    @property
+    def metrics(self):
+        # We list our `Metric` objects here so that `reset_states()` can be
+        # called automatically at the start of each epoch
+        # or at the start of `evaluate()`.
+        # If you don't implement this property, you have to call
+        # `reset_states()` yourself at the time of your choosing.
+        return [loss_tracker]
 
 
 
