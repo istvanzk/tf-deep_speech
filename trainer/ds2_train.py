@@ -276,39 +276,33 @@ def train_model(_):
 
     # Set output paths and callbacks for training
     callbacks = []
-    # if tfc.remote():
-    #     checkpoint_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH, "save_at_{epoch}")
-    #     save_path = os.path.join("gs://", GCP_BUCKET, MODEL_PATH)
-    #     tensorboard_path = os.path.join(  # Timestamp included to enable timeseries graphs
-    #         "gs://", GCP_BUCKET, "logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    #     )
 
-    #     # TensorBoard will store logs for each epoch and graph performance
-    #     callbacks.append(
-    #         tf.keras.callbacks.TensorBoard(
-    #             log_dir=tensorboard_path, 
-    #             histogram_freq=1)
-    #     )
-         
-    # else:
-    checkpoint_path = os.path.join(flags_obj.model_dir, "save_at_{epoch}")
-    save_path = os.path.join(flags_obj.model_dir)
-
-    logging.info(f"Checkpoints: {checkpoint_path}")
-    logging.info(f"Model save: {save_path}")
+    # TensorBoard will store logs for each epoch and graph performance
+    # tensorboard_path = os.path.join(  # Timestamp included to enable timeseries graphs
+    #     flags_obj.model_dir, "logs", datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    # )
+    # logging.info(f"TB logs: {tensorboard_path}")
+    # callbacks.append(
+    #     tf.keras.callbacks.TensorBoard(
+    #         log_dir=tensorboard_path, 
+    #         histogram_freq=1)
+    # )
 
     # 'EarlyStopping' to stop training when the model is not enhancing anymore
     callbacks.append(
         tf.keras.callbacks.EarlyStopping(
-            monitor="val_loss",
-            patience=10, 
+            monitor="loss",
+            patience=5, 
+            verbose=1,
             restore_best_weights=True)
     )
-    # 'ModelCheckPoint' to always keep the model that has the best val_loss
+    # 'ModelCheckPoint' to always keep the model from each epoch
+    checkpoint_path = os.path.join(flags_obj.model_dir, "save_at_{epoch}")
+    logging.info(f"Checkpoints: {checkpoint_path}")
     callbacks.append(
         tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path,
-            monitor="val_loss", 
+            monitor="loss", 
             verbose=1,
             save_best_only=False)
     )
@@ -324,7 +318,8 @@ def train_model(_):
     )
 
     # Save the model
-    logging.info("Saving trained model...")
+    save_path = os.path.join(flags_obj.model_dir,"ds2" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + ".h5")
+    logging.info(f"Saving trained model to {save_path}...")
     model.save(save_path)
 
     return model
