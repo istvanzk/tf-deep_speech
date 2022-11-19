@@ -158,7 +158,7 @@ class CustomModelCTCLoss(tf.keras.Model):
         # Compute our own metrics
         val_loss_tracker.update_state(loss)
 
-        return {'val_loss': val_loss_tracker.result()}
+        return {'loss': val_loss_tracker.result()}
 
 
     @property
