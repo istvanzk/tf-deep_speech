@@ -6,3 +6,4 @@ data/*.gz
 .vscode/settings.json
 *-logs-*
 logs
+model_*
