@@ -317,10 +317,12 @@ def train_model(_):
         callbacks=callbacks,
     )
 
-    # Save the model
-    save_path = os.path.join(flags_obj.model_dir,"ds2" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + ".h5")
+    # Save the model (creates a SavedModel folder)
+    save_path = os.path.join(flags_obj.model_dir,"ds2" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     logging.info(f"Saving trained model to {save_path}...")
     model.save(save_path)
+    # It can be used to reconstruct the model identically
+    #loaded_model = tf.keras.models.load_model(save_path)
 
     return model
 
