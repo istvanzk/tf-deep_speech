@@ -4,3 +4,5 @@ data/*.gz
 *.code-workspace
 *.pyc
 .vscode/settings.json
+*-logs-*
+logs
