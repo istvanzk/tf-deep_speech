@@ -45,7 +45,7 @@ def main():
         packages=['trainer', 'model', 'data'],
         #packages=find_packages(),
         include_package_data=True,
-        python_requires='>=3.8, <3.10',
+        python_requires='>=3.8, <4',
     )
 
 if __name__ == '__main__':
