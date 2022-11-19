@@ -18,10 +18,10 @@ Development plans & status:
 - [x] Updates to work with [Common Voice Corpus 2](https://commonvoice.mozilla.org/en/datasets) 
 - [x] Refactor code to use Keras Functional API
 - [x] Remove old code which uses tf.estimator and update ReadMe for the use of the new code which uses Keras Functional AP
-- [x] Modularize to match customm training requirements on GC with Vertex AI
+- [x] Modularize to match custom training requirements on GC with Vertex AI
 - [x] Local training test (Python 3.8+)
-- [ ] Custom training job in custom container on GC (Vertex AI, Artifacts Registry, etc.) - Ongoing
-- [ ] Fine-tune training and performance
+- [x] Custom training job in custom container on GC (Vertex AI, Artifacts Registry, etc.)
+- [ ] Fine-tune training and test performance - Ongoing
 - [ ] Make it work with [Rahsspy](https://github.com/rhasspy/rhasspy), as replacement for the [Mozilla DeepSpeech](https://github.com/mozilla/DeepSpeech)
 
 
