@@ -154,7 +154,6 @@ class TextFeaturizer(object):
         #with codecs.open(vocab_file, "r", "utf-8") as fin:
         with tf.io.gfile.GFile(vocab_file, "r") as fin:
             lines.extend(fin.readlines())
-        logging.debug(lines)
         self.token_to_index = {}
         self.index_to_token = {}
         self.speech_labels = ""
@@ -171,3 +170,5 @@ class TextFeaturizer(object):
             self.index_to_token[index] = unicodedata.normalize("NFC",line)
             self.speech_labels += line
             index += 1
+            
+        logging.debug(self.token_to_index)
