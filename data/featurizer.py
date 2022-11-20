@@ -126,7 +126,7 @@ def compute_label_feature_dc(text, token_to_idx):
         feats = []
         s=0
         for i,dc in enumerate(dc_tokens):
-            if dc in token_to_idx.keys():
+            if dc in list(token_to_idx.keys()):
                 if s==1:
                     feats.pop()
                 feats.append(token_to_idx[dc])
@@ -170,5 +170,5 @@ class TextFeaturizer(object):
             self.index_to_token[index] = unicodedata.normalize("NFC",line)
             self.speech_labels += line
             index += 1
-            
+
         logging.debug(self.token_to_index)
