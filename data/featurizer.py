@@ -19,6 +19,8 @@ import tensorflow as tf
 #import codecs
 import unicodedata
 import numpy as np
+from absl import logging
+logging.set_verbosity(logging.ERROR)
 
 def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
                                 window_ms=20.0, max_freq=None, fft_length=320):
@@ -101,18 +103,45 @@ class AudioFeaturizer(object):
 
 
 def compute_label_feature(text, token_to_idx):
-    """Convert string to a list of integers."""
-    #tokens = list(text.strip().lower())
+    """Convert string to a list of integers (single character wise)."""
     tokens = list(unicodedata.normalize("NFC", text.strip().lower()))
     try:
         feats = [token_to_idx[token] for token in tokens]
         return feats
     except KeyError:
-        print(text)
-        print(tokens)
-        print(token_to_idx)
+        logging.debug(text)
+        logging.debug(tokens)
+        logging.debug(token_to_idx)
         raise
 
+def compute_label_feature_dc(text, token_to_idx):
+    """Convert string to a list of integers (single or double character wise)."""
+    tokens = list(unicodedata.normalize("NFC", text.strip().lower()))
+
+    # Extract pairs of consecutive characters
+    dc_tokens = [tokens[i:i+2] for i in range(0,len(tokens)-1,1)]
+
+    # List of integers (single or double character)
+    try:
+        feats = []
+        s=0
+        for i,dc in enumerate(dc_tokens):
+            if dc in token_to_idx.keys():
+                if s==1:
+                    feats.pop()
+                feats.append(token_to_idx[dc])
+                s=1
+            else:
+                feats.append(token_to_idx[dc[s]])
+
+        return feats
+
+    except KeyError:
+        logging.debug(text)
+        logging.debug(dc_tokens)
+        logging.debug(token_to_idx)
+        raise
+            
 class TextFeaturizer(object):
     """Extract text feature based on char-level granularity.
 
@@ -125,15 +154,19 @@ class TextFeaturizer(object):
         #with codecs.open(vocab_file, "r", "utf-8") as fin:
         with tf.io.gfile.GFile(vocab_file, "r") as fin:
             lines.extend(fin.readlines())
+        logging.debug(lines)
         self.token_to_index = {}
         self.index_to_token = {}
         self.speech_labels = ""
+        self.dc_labels = False
         index = 0
         for line in lines:
             line = line[:-1]  # Strip the '\n' char.
             if line.startswith("#"):
                 # Skip from reading comment line.
                 continue
+            if len(line)>1:
+                self.dc_labels = True
             self.token_to_index[unicodedata.normalize("NFC",line)] = index
             self.index_to_token[index] = unicodedata.normalize("NFC",line)
             self.speech_labels += line
