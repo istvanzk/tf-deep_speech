@@ -276,8 +276,12 @@ def input_fn(batch_size, deep_speech_dataset, repeat=1):
         for audio_file, _, transcript in data_entries:
             features = _preprocess_audio(
                 audio_file, audio_featurizer, feature_normalize)
-            labels = featurizer.compute_label_feature(
-                transcript, text_featurizer.token_to_index)
+            if text_featurizer.dc_labels:
+                labels = featurizer.compute_label_feature_dc(
+                    transcript, text_featurizer.token_to_index)
+            else:    
+                labels = featurizer.compute_label_feature(
+                    transcript, text_featurizer.token_to_index)
             input_length = [features.shape[0]]
             label_length = [len(labels)]
             # Yield a tuple of (features, labels) where features is a dict containing
