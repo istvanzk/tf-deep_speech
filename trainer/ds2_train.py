@@ -153,6 +153,10 @@ def evaluate_model(model):
         total_wer += greedy_decoder.wer(decoded_str, targets[i]) / float(
             len(targets[i].split()))
 
+        # Output the transcripts
+        logging.info(f"Target: {targets[i]}")
+        logging.info(f"Predicted: {decoded_str}")
+
     # Get mean value
     total_cer /= num_of_examples
     total_wer /= num_of_examples
