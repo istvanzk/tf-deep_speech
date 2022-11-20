@@ -134,6 +134,8 @@ def evaluate_model(model):
     # Evaluate
     probs = model.predict(
         x=input_dataset_eval,
+        steps=1,
+        verbose=2,
     )
 
     num_of_examples = len(probs)
@@ -315,6 +317,7 @@ def train_model(_):
         validation_data=input_dataset_test,
         epochs=flags_obj.train_epochs,
         callbacks=callbacks,
+        verbose=2,
     )
 
     # Save the model (creates a SavedModel folder)
