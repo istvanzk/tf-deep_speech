@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2022 Istvan Z. Kovacs. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -318,7 +318,7 @@ def train_model(_):
     )
 
     # Save the model (creates a SavedModel folder)
-    save_path = os.path.join(flags_obj.model_dir,"ds2" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    save_path = os.path.join(flags_obj.model_dir,"ds2_final")
     logging.info(f"Saving trained model to {save_path}...")
     model.save(save_path)
     # It can be used to reconstruct the model identically
@@ -516,14 +516,15 @@ def define_deep_speech_flags():
 
 def main(_):
     """Entry point when running locally from absl.app"""
-    model = train_model(flags_obj)
-    evaluate_model(model)
 
-# def main_tfc():
-#     """Entry point when running with TensorFlow Cloud"""
-#     define_deep_speech_flags()
-#     flags_obj = flags.FLAGS
-#     train_model(flags_obj)
+    # Train model
+    if flags_obj.train_epochs > 0:
+        model = train_model(flags_obj)
+
+    # Load model and evaluate
+    load_path = os.path.join(flags_obj.model_dir,"ds2_final")
+    loaded_model = tf.keras.models.load_model(load_path)
+    evaluate_model(loaded_model)
 
 if __name__ == "__main__":
     logging.set_verbosity(logging.DEBUG)
