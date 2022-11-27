@@ -171,4 +171,4 @@ class TextFeaturizer(object):
             self.speech_labels += line
             index += 1
 
-        logging.debug(self.token_to_index)
+        logging.debug(f"Vocabulary: {self.token_to_index}")
