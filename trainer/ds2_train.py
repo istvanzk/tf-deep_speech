@@ -64,8 +64,8 @@ def generate_dataset(dataset_csv):
                                     normalize=True)
     
     logging.info(f"Dataset CSV: {os.path.join(flags_obj.data_dir, dataset_csv)}")
-    logging.info(f"Vocabulary: {os.path.join(flags_obj.data_dir, flags_obj.vocabulary_file)}")
     logging.info(f"Speech data: {os.path.join(flags_obj.data_dir, flags_obj.speech_dir)}")
+    logging.info(f"Vocabulary data: {os.path.join(flags_obj.data_dir, flags_obj.vocabulary_file)}")
 
     train_data_conf = dataset.DatasetConfig(
         audio_conf,
@@ -479,7 +479,7 @@ def define_deep_speech_flags():
 
     flags.DEFINE_integer(
         name="rnn_hidden_layers", 
-        default=2,
+        default=4,
         help=flags_core.help_wrap("The number of RNN layers."))
 
     flags.DEFINE_bool(
