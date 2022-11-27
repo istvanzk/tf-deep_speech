@@ -156,7 +156,7 @@ class TextFeaturizer(object):
             lines.extend(fin.readlines())
         self.token_to_index = {}
         self.index_to_token = {}
-        self.speech_labels = ""
+        #self.speech_labels = ""
         self.dc_labels = False
         index = 0
         for line in lines:
@@ -168,7 +168,9 @@ class TextFeaturizer(object):
                 self.dc_labels = True
             self.token_to_index[unicodedata.normalize("NFC",line)] = index
             self.index_to_token[index] = unicodedata.normalize("NFC",line)
-            self.speech_labels += line
+            #self.speech_labels += line
             index += 1
 
-        logging.debug(f"Vocabulary: {self.token_to_index}")
+        logging.debug(f"Vocabulary: ({len(self.token_to_index)} entries) {self.token_to_index}")
+        self.speech_labels = self.token_to_index.keys()
+        logging.debug(f"Speech labels: {self.speech_labels}")
