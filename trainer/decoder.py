@@ -18,7 +18,8 @@
 import itertools
 from nltk.metrics import distance
 import numpy as np
-
+from absl import logging
+logging.set_verbosity(logging.ERROR)
 
 class DeepSpeechDecoder(object):
   """Greedy decoder implementation for Deep Speech model."""
@@ -38,8 +39,13 @@ class DeepSpeechDecoder(object):
 
   def convert_to_string(self, sequence):
     """Convert a sequence of indexes into corresponding string."""
-    return ''.join([self.int_to_char[i] for i in sequence])
-
+    try:
+      return ''.join([self.int_to_char[i] for i in sequence])
+    except:
+      logging.error(f"sequence: {sequence}")
+      logging.error(f"int_to_char: {self.int_to_char}")
+      raise
+    
   def wer(self, decode, target):
     """Computes the Word Error Rate (WER).
 
