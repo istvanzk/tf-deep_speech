@@ -142,7 +142,7 @@ def evaluate_model(model):
     targets = [entry[2] for entry in entries]  # The ground truth transcript
 
     total_wer, total_cer = 0, 0
-    greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=0)
+    greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=len(speech_labels))
     for i in range(num_of_examples):
         # Decode string.
         decoded_str = greedy_decoder.decode(probs[i])
