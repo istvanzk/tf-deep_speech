@@ -154,7 +154,7 @@ def evaluate_model(model):
             len(targets[i].split()))
 
         # Output the transcripts
-        logging.info(f"Target: {targets[i]}")
+        logging.info(f"Target: {targets[i][:-1]}")
         logging.info(f"Predicted: {decoded_str}")
 
     # Get mean value
