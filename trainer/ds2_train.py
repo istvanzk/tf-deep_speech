@@ -167,7 +167,7 @@ def evaluate_model(model):
         _CER_KEY: total_cer,
     }
 
-    logging.info(f"Evaluation results: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
+    logging.info(f"==> Evaluation results: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
 
     return eval_results
 
