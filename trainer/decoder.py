@@ -42,10 +42,12 @@ class DeepSpeechDecoder(object):
     try:
       return ''.join([self.int_to_char[i] for i in sequence])
     except:
+      logging.error(f"labels: {self.labels}")
+      logging.error(f"blank_index: {self.blank_index}")
       logging.error(f"sequence: {sequence}")
       logging.error(f"int_to_char: {self.int_to_char}")
       raise
-    
+
   def wer(self, decode, target):
     """Computes the Word Error Rate (WER).
 
