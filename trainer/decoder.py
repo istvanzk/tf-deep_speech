@@ -95,6 +95,7 @@ class DeepSpeechDecoder(object):
     except:
       logging.error(f"labels: {self.labels}")
       logging.error(f"blank_index: {self.blank_index}")
+      logging.error(f"logits_shape: {logits.shape}")
       logging.error(f"logits: {logits}")
       logging.error(f"best: {best}")
       logging.error(f"merge: {merge}")
