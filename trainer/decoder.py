@@ -39,14 +39,7 @@ class DeepSpeechDecoder(object):
 
   def convert_to_string(self, sequence):
     """Convert a sequence of indexes into corresponding string."""
-    try:
-      return ''.join([self.int_to_char[i] for i in sequence])
-    except:
-      logging.error(f"labels: {self.labels}")
-      logging.error(f"blank_index: {self.blank_index}")
-      logging.error(f"sequence: {sequence}")
-      logging.error(f"int_to_char: {self.int_to_char}")
-      raise
+    return ''.join([self.int_to_char[i] for i in sequence])
 
   def wer(self, decode, target):
     """Computes the Word Error Rate (WER).
@@ -96,4 +89,15 @@ class DeepSpeechDecoder(object):
       if k != self.blank_index:
         merge_remove_blank.append(k)
 
-    return self.convert_to_string(merge_remove_blank)
+    # In case of decoding error display extended info
+    try:
+      return self.convert_to_string(merge_remove_blank)
+    except:
+      logging.error(f"labels: {self.labels}")
+      logging.error(f"blank_index: {self.blank_index}")
+      logging.error(f"logits: {logits}")
+      logging.error(f"best: {best}")
+      logging.error(f"merge: {merge}")
+      logging.error(f"merge_remove_blank: {merge_remove_blank}")
+      logging.error(f"int_to_char: {self.int_to_char}")
+      raise
