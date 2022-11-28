@@ -156,6 +156,7 @@ def evaluate_model(model):
         # Output the transcripts
         logging.info(f"Target: {targets[i][:-1]}")
         logging.info(f"Predicted: {decoded_str}")
+        logging.info(f"---")
 
     # Get mean value
     total_cer /= num_of_examples
