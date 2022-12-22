@@ -46,8 +46,8 @@ def compute_spectrogram_feature(samples, sample_rate, stride_ms=10.0,
     spectrogram = tf.signal.stft(
         samples, frame_length=window_size, frame_step=stride_size, fft_length=fft_length)
     # We only need the magnitude, which can be derived by applying tf.abs
-    spectrogram = tf.abs(spectrogram)
-    spectrogram = tf.math.pow(spectrogram, 0.5)
+    spectrogram = tf.math.abs(spectrogram)
+    spectrogram = tf.math.pow(spectrogram, 2)
     spectrogram = np.log(spectrogram + np.finfo(float).eps) 
     return spectrogram
     #return np.transpose(spectrogram, (1,0))
