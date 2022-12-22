@@ -1,5 +1,7 @@
 data/cv-corpus-*
 data/*.gz
+cv-corpus-*
+*.gz
 *.egg-info
 *.code-workspace
 *.pyc
