@@ -1,8 +1,7 @@
 # DeepSpeech2 Model fork [05.04.2022]
 ![Exp](https://img.shields.io/badge/Fork-experimental-orange.svg)
 [![Lic](https://img.shields.io/badge/License-Apache2.0-green)](http://www.apache.org/licenses/LICENSE-2.0)
-![Py](https://img.shields.io/badge/python-3.8-green)
-![Py](https://img.shields.io/badge/python-3.9-green)
+![Py](https://img.shields.io/badge/python-3.7+-green)
 [![TensorFlow 2.9](https://img.shields.io/badge/TensorFlow-2.9-FF6F00?logo=tensorflow)](https://github.com/tensorflow/tensorflow/releases/tag/v2.9.0)
 [![Keras](https://img.shields.io/badge/KerasAPI-OK-green)](https://keras.io/api/)
 ![GC](https://img.shields.io/badge/GoogleCloud_VertexAI-OK-green)
@@ -21,6 +20,7 @@ Development plans & status:
 - [x] Modularize to match custom training requirements on GC with Vertex AI
 - [x] Local training test (Python 3.8+)
 - [x] Custom training job in custom container on GC (Vertex AI, Artifacts Registry, etc.)
+- [x] Custom training in VertexAI/Workbench, JupyterLab notebook (VM instance with one GPU T4)
 - [ ] Fine-tune training and test performance - Ongoing
 - [ ] Make it work with [Rahsspy](https://github.com/rhasspy/rhasspy), as replacement for the [Mozilla DeepSpeech](https://github.com/mozilla/DeepSpeech)
 
