@@ -6,7 +6,7 @@
 [![Keras](https://img.shields.io/badge/KerasAPI-OK-green)](https://keras.io/api/)
 ![GC](https://img.shields.io/badge/GoogleCloud_VertexAI-OK-green)
 ![Docker](https://img.shields.io/badge/Docker-OK-green)
-![Ver](https://img.shields.io/badge/version-0.1b2-lightgrey)
+![Ver](https://img.shields.io/badge/version-0.1b3-lightgrey)
 
 This is a stand-alone fork for the Tensorflow [DeepSpeech2](https://github.com/tensorflow/models/tree/master/research/deep_speech) code.
 
