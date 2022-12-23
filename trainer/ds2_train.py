@@ -38,7 +38,7 @@ import tensorflow as tf
 # Local modules
 import data.dataset as dataset
 import decoder
-from model.keras_model import ds2_model, SUPPORTED_RNNS
+from model.keras_model import ds2_model, SUPPORTED_RNNS # type: ignore
 
 # Modules from tf-models-official
 from official.utils.flags import core as flags_core
