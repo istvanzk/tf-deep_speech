@@ -322,7 +322,7 @@ def train_model(_):
         validation_data=input_dataset_test,
         epochs=flags_obj.train_epochs,
         callbacks=callbacks,
-        verbose=2,
+        verbose=2, # type: ignore
     )
 
     # Save the model (creates a SavedModel folder)
@@ -369,11 +369,13 @@ def define_deep_speech_flags():
 
     # Default csv file names under _DATA_DIR
     _TRAIN_CSV = "train.csv"
-    _TEST_CSV = "test.csv"
-    _DEV_CSV = "dev.csv"
+    _TEST_CSV  = "test.csv"
+    _DEV_CSV   = "dev.csv"
 
     # Default output model path
-    _MODEL_DIR = "model_v0"
+    _MODEL_DIR  = "model_v0"
+    # Default model (folder) to evaluate under _MODEL_DIR
+    _MODEL_EVAL = "ds2_final"
 
     # Default training hyper-parameters
     _EPOCHS = 10
@@ -393,12 +395,13 @@ def define_deep_speech_flags():
         _TEST_CSV   = params["test_csv"]
         _DEV_CSV    = params["dev_csv"]
         _MODEL_DIR  = params["model_dir"]
+        _MODEL_EVAL = params["model_eval"]
 
         _EPOCHS = params["train_epochs"]
         _BATCH  = params["batch_size"]
 
     #
-    # Parameters configurable from JSON or args
+    # Parameters configurable from JSON or as args
     #
     # Training parameters
     flags_core.set_defaults(
@@ -416,38 +419,45 @@ def define_deep_speech_flags():
     flags.DEFINE_string(
         name="train_data_csv",
         default=_TRAIN_CSV,
-        help=flags_core.help_wrap("The csv file path of the train dataset under data_dir."))
+        help=flags_core.help_wrap("The csv file path of the train dataset, under data_dir."))
 
     flags.DEFINE_string(
         name="test_data_csv",
         default=_TEST_CSV,
-        help=flags_core.help_wrap("The csv file path of the test dataset under data_dir."))
+        help=flags_core.help_wrap("The csv file path of the test dataset, under data_dir."))
 
     flags.DEFINE_string(
         name="eval_data_csv",
         default=_DEV_CSV,
-        help=flags_core.help_wrap("The csv file path of the evaluation dataset under data_dir."))
+        help=flags_core.help_wrap("The csv file path of the evaluation dataset, under data_dir."))
 
     flags.DEFINE_string(
         name= "speech_dir",
         default=_SPEECH_DIR,
-        help=flags_core.help_wrap("The speech files path under under data_dir"))
+        help=flags_core.help_wrap("The speech files path, under under data_dir"))
 
     flags.DEFINE_string(
         name="vocabulary_file", 
         default=_VOCABULARY_FILE,
-        help=flags_core.help_wrap("The vocabulary file path under data_dir."))
+        help=flags_core.help_wrap("The vocabulary file path, under data_dir."))
+
+    flags.DEFINE_string(
+        name="model_eval",
+        default=_MODEL_EVAL,
+        help=flags_core.help_wrap("The model (folder) to evaluate, under model_dir."))
 
     #
     # Parameters configurable only as args
     #
     # Deep speech flags
     flags.DEFINE_integer(
-        name="seed", default=1,
+        name="seed", 
+        default=1,
         help=flags_core.help_wrap("The random seed."))
 
     flags.DEFINE_bool(
-        name="sortagrad", default=True,
+        name="sortagrad", 
+        default=True,
         help=flags_core.help_wrap(
             "If true, sort examples by audio length and perform no "
             "batch_wise shuffling for the first epoch."))
@@ -530,7 +540,7 @@ def main(_):
         model = train_model(flags_obj)
 
     # Load model and evaluate
-    load_path = os.path.join(flags_obj.model_dir,"ds2_final")
+    load_path = os.path.join(flags_obj.model_dir, flags_obj.model_eval)
     loaded_model = tf.keras.models.load_model(load_path)
     evaluate_model(loaded_model)
 
