@@ -274,7 +274,8 @@ def train_model(_):
             # Load a previously saved model (SavedModel format)
             load_path = os.path.join(flags_obj.model_dir, flags_obj.model_load)
             logging.info(f"Load Model from: {load_path} ...")
-            model = tf.keras.models.load_model(load_path)
+            from model.keras_model import CustomModelCTCLoss
+            model = tf.keras.models.load_model(load_path, custom_objects={"CustomModelCTCLoss": CustomModelCTCLoss})
 
     # Plot summary of the model
     if flags_obj.plot_model:
