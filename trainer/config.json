@@ -1,5 +1,5 @@
 {
-    "data_dir": "./data/cv-corpus-8.0-2022-01-19/hu",
+    "data_dir": "../cv-corpus-8.0-2022-01-19/hu",
     "speech_subdir": "clips-wav",
     "vocabulary_txt": "vocabulary-hu.txt",
     "train_csv": "train.csv",
@@ -8,5 +8,5 @@
     "model_dir": "model_v0",
     "model_eval": "ds2_final",
     "train_epochs":10,
-    "batch_size":128
+    "batch_size":64
 }
