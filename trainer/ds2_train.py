@@ -248,23 +248,33 @@ def train_model(_):
     # https://www.tensorflow.org/tutorials/distribute/input
     with distribution_strategy.scope():
 
-        # Model
-        model = ds2_model(
-            flags_obj.num_feature_bins,
-            num_classes, 
-            flags_obj.rnn_hidden_layers, flags_obj.rnn_type,
-            flags_obj.is_bidirectional, flags_obj.rnn_hidden_size,
-            flags_obj.use_bias
-        )
+        # Generate a new model or load a SavedModel
+        # https://tensorflow.google.cn/tutorials/distribute/save_and_load
+        if flags_obj.model_load is None or flags_obj.model_load == "_":
+            # Generate a new model
+            logging.info(f"Generate new Model...")
+            model = ds2_model(
+                flags_obj.num_feature_bins,
+                num_classes, 
+                flags_obj.rnn_hidden_layers, flags_obj.rnn_type,
+                flags_obj.is_bidirectional, flags_obj.rnn_hidden_size,
+                flags_obj.use_bias
+            )
 
-        # Optimizer
-        optimizer = tf.keras.optimizers.Adam(learning_rate=flags_obj.learning_rate)
+            # Optimizer
+            optimizer = tf.keras.optimizers.Adam(learning_rate=flags_obj.learning_rate)
 
-        # Compile the model
-        model.compile(
-            optimizer=optimizer, 
-            loss=None
-        )
+            # Compile the model
+            model.compile(
+                optimizer=optimizer, 
+                loss=None
+            )
+
+        else:
+            # Load a previously saved model (SavedModel format)
+            load_path = os.path.join(flags_obj.model_dir, flags_obj.model_load)
+            logging.info(f"Load Model from: {load_path} ...")
+            model = tf.keras.models.load_model(load_path)
 
     # Plot summary of the model
     if flags_obj.plot_model:
@@ -361,21 +371,23 @@ def define_deep_speech_flags():
     # Default dataset path
     _DATA_DIR = "./data/cv-corpus-8.0-2022-01-19/hu"
 
-    # Default vocabulary file under _DATA_DIR 
+    # Default vocabulary file, under _DATA_DIR 
     _VOCABULARY_FILE = "vocabulary-hu.txt"
 
-    # Default WAV files path under _DATA_DIR
+    # Default WAV files path, under _DATA_DIR
     _SPEECH_DIR = "clips-wav"
 
-    # Default csv file names under _DATA_DIR
+    # Default csv file names, under _DATA_DIR
     _TRAIN_CSV = "train.csv"
     _TEST_CSV  = "test.csv"
     _DEV_CSV   = "dev.csv"
 
     # Default output model path
     _MODEL_DIR  = "model_v0"
-    # Default model (folder) to evaluate under _MODEL_DIR
+    # Default model (SavedModel folder) to evaluate, under _MODEL_DIR
     _MODEL_EVAL = "ds2_final"
+    # Default model (SavedModel folder) to load for further training, under _MODEL_DIR
+    _MODEL_LOAD = "_"
 
     # Default training hyper-parameters
     _EPOCHS = 10
@@ -387,7 +399,7 @@ def define_deep_speech_flags():
         with open("trainer/config.json", 'r') as f:
             params = json.load(f)
 
-        logging.info("Default parameters: trainer/config.json")
+        logging.info("Default parameters loaded from: trainer/config.json")
         _DATA_DIR   = params["data_dir"]
         _SPEECH_DIR = params["speech_subdir"]
         _VOCABULARY_FILE = params["vocabulary_txt"]
@@ -396,6 +408,7 @@ def define_deep_speech_flags():
         _DEV_CSV    = params["dev_csv"]
         _MODEL_DIR  = params["model_dir"]
         _MODEL_EVAL = params["model_eval"]
+        _MODEL_LOAD = params["model_load"]
 
         _EPOCHS = params["train_epochs"]
         _BATCH  = params["batch_size"]
@@ -444,7 +457,12 @@ def define_deep_speech_flags():
     flags.DEFINE_string(
         name="model_eval",
         default=_MODEL_EVAL,
-        help=flags_core.help_wrap("The model (folder) to evaluate, under model_dir."))
+        help=flags_core.help_wrap("The model (SavedModel folder) to evaluate, under model_dir."))
+
+    flags.DEFINE_string(
+        name="model_load",
+        default=_MODEL_LOAD,
+        help=flags_core.help_wrap("The model (SavedModel folder) to load fo further training, under model_dir."))
 
     #
     # Parameters configurable only as args

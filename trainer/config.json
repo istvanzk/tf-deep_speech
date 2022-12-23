@@ -7,6 +7,7 @@
     "dev_csv": "dev.csv",
     "model_dir": "model_v0",
     "model_eval": "ds2_final",
+    "model_load": "_",
     "train_epochs":10,
     "batch_size":64
 }
