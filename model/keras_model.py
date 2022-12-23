@@ -251,7 +251,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     # Output of 2nd conv layer with the shape of
     # [batch_size (N), times (T), features (F), channels (C)].
     # Convert the conv output to rnn input.
-    x = tf.keras.layers.Reshape((-1, x.shape[-2] * x.shape[-1]))(x)
+    x = tf.keras.layers.Reshape((-1, x.shape[-2] * x.shape[-1]))(x) # type: ignore
 
     # RNN layers
     rnn_cell = SUPPORTED_RNNS[rnn_type]

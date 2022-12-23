@@ -281,7 +281,7 @@ def train_model(_):
     if flags_obj.plot_model:
         logging.info("Plot model summary...")
 
-        model.summary(line_length=110)
+        model.summary(line_length=110) # type: ignore
 
         # tf.keras.utils.plot_model(
         #     model, 
@@ -328,7 +328,7 @@ def train_model(_):
     # Train/fit
     logging.info("Starting to train...")
 
-    model.fit(
+    model.fit( # type: ignore
         x=input_dataset_train,
         validation_data=input_dataset_test,
         epochs=flags_obj.train_epochs,
@@ -339,7 +339,7 @@ def train_model(_):
     # Save the model (creates a SavedModel folder)
     save_path = os.path.join(flags_obj.model_dir,"ds2_final")
     logging.info(f"Saving trained model to {save_path}...")
-    model.save(save_path)
+    model.save(save_path) # type: ignore
     # It can be used to reconstruct the model identically
     #loaded_model = tf.keras.models.load_model(save_path)
 
