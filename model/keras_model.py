@@ -40,8 +40,8 @@ val_loss_tracker = tf.keras.metrics.Mean(name="val_loss")
 
 class CustomModelCTCLoss(tf.keras.Model):
     """Custom Model class with CTC loss"""
-    #def _init_(self):
-    #    super().__init__()
+    def _init_(self):
+        super().__init__()
 
     def compute_length_after_conv(self, max_time_steps, ctc_time_steps, input_length):
         """Computes the time_steps/ctc_input_length after convolution.
