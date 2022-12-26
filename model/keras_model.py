@@ -225,6 +225,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     x = tf.keras.layers.Conv2D(
         filters=_CONV_FILTERS, kernel_size=[41, 11], strides=[2, 2],
         padding="valid", use_bias=False, activation=tf.nn.relu6,
+        kernel_regularizer=tf.keras.regularizers.l2(0.0005),
         name="conv_1")(x)
 
     # Batch normalisation
@@ -244,6 +245,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     x = tf.keras.layers.Conv2D(
         filters=_CONV_FILTERS, kernel_size=[21, 11], strides=[2, 1],
         padding="valid", use_bias=False, activation=tf.nn.relu6,
+        kernel_regularizer=tf.keras.regularizers.l2(0.0005),
         name="conv_2")(x)
 
     # Batch normalisation
@@ -284,7 +286,11 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     x = tf.keras.layers.Dropout(rate=0.5)(x)
   
     output_ = tf.keras.layers.Dense(
-        units=num_classes+1, use_bias=use_bias, activation="softmax")(x)
+        units=num_classes+1, 
+        use_bias=use_bias, 
+        kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+        bias_regularizer=tf.keras.regularizers.l2(0.0005),
+        activation="softmax")(x)
 
     # The model
     #inputs=[input_, inputlng_, labels_, labelslng_]
