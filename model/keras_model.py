@@ -233,6 +233,8 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     x = tf.keras.layers.BatchNormalization(
         momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
 
+    x = tf.keras.layers.Dropout(rate=0.5)(x)
+
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
     # This step is required to avoid issues when RNN output sequence is shorter than the label length.   
@@ -247,6 +249,9 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     # Batch normalisation
     x = tf.keras.layers.BatchNormalization(
         momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+
+    x = tf.keras.layers.Dropout(rate=0.5)(x)
+
 
     # Output of 2nd conv layer with the shape of
     # [batch_size (N), times (T), features (F), channels (C)].
@@ -275,7 +280,9 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     # Output layer: FC layer with batch norm
     x = tf.keras.layers.BatchNormalization(
             momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
-   
+
+    x = tf.keras.layers.Dropout(rate=0.5)(x)
+  
     output_ = tf.keras.layers.Dense(
         units=num_classes+1, use_bias=use_bias, activation="softmax")(x)
 
