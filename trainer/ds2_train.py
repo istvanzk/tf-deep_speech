@@ -274,8 +274,8 @@ def train_model(_):
  
             optimizer = tf.keras.optimizers.SGD(
                 learning_rate=learning_rate_fn, # type: ignore
-                momentum=flags_obj.learning_momentum, 
-                weight_decay=0.0005)
+                momentum=flags_obj.learning_momentum) 
+                #weight_decay=0.0005) # available only in TF2.10
 
             # Compile the model
             model.compile(
