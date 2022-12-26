@@ -223,7 +223,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
 
     # 2-D CNN layer
     x = tf.keras.layers.Conv2D(
-        filters=_CONV_FILTERS, kernel_size=[41, 11], strides=[2, 1],
+        filters=_CONV_FILTERS, kernel_size=[41, 11], strides=[2, 2],
         padding="valid", use_bias=False, activation=tf.nn.relu6,
         name="conv_1")(x)
 
