@@ -262,20 +262,20 @@ def train_model(_):
             )
 
             # Optimizer
-            #optimizer = tf.keras.optimizers.Adam(learning_rate=flags_obj.learning_rate)
+            optimizer = tf.keras.optimizers.Adam(learning_rate=flags_obj.learning_rate)
 
-            # SGD with ploynomial decay and momentum
+            # SGD with ploynomial decay and momentum - Not working, no learning!?
             # https://keras.io/api/optimizers/learning_rate_schedules/polynomial_decay/
-            learning_rate_fn = tf.keras.optimizers.schedules.PolynomialDecay(
-                initial_learning_rate=flags_obj.learning_rate,
-                decay_steps=100, # the approx. number of (observed) steps per epoch
-                end_learning_rate=5e4, # the fixed value learning rate
-                power=flags_obj.learning_decaypower)
+            # learning_rate_fn = tf.keras.optimizers.schedules.PolynomialDecay(
+            #     initial_learning_rate=flags_obj.learning_rate,
+            #     decay_steps=100, # the approx. number of (observed) steps per epoch
+            #     end_learning_rate=5e4, # the fixed value learning rate
+            #     power=flags_obj.learning_decaypower)
  
-            optimizer = tf.keras.optimizers.SGD(
-                learning_rate=learning_rate_fn, # type: ignore
-                momentum=flags_obj.learning_momentum) 
-                #weight_decay=0.0005) # available only in TF2.10
+            # optimizer = tf.keras.optimizers.SGD(
+            #     learning_rate=learning_rate_fn, # type: ignore
+            #     momentum=flags_obj.learning_momentum) 
+            #     #weight_decay=0.0005) # available only in TF2.10
 
             # Compile the model
             model.compile(
