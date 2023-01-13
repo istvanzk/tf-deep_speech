@@ -255,31 +255,39 @@ def train_model(_):
             logging.info(f"Generate new Model...")
             model = ds2_model(
                 flags_obj.num_feature_bins,
-                num_classes, 
+                num_classes,
                 flags_obj.rnn_hidden_layers, flags_obj.rnn_type,
                 flags_obj.is_bidirectional, flags_obj.rnn_hidden_size,
                 flags_obj.use_bias
             )
 
+            # PolynomialDecay learning rate scheduler
+            # https://keras.io/api/optimizers/learning_rate_schedules/polynomial_decay/
+            learning_rate_fn = tf.keras.optimizers.schedules.PolynomialDecay(
+                initial_learning_rate=flags_obj.learning_rate,
+                decay_steps=1000, # with 100 steps per epoch
+                end_learning_rate=1e-4,
+                power=flags_obj.learning_decaypower)
+ 
+
             # Optimizer
+            # Adam with fixed learning rate - Works & learns, but requires too many epochs (>>40)!
             optimizer = tf.keras.optimizers.Adam(learning_rate=flags_obj.learning_rate)
 
-            # SGD with ploynomial decay and momentum - Not working, no learning!?
-            # https://keras.io/api/optimizers/learning_rate_schedules/polynomial_decay/
-            # learning_rate_fn = tf.keras.optimizers.schedules.PolynomialDecay(
-            #     initial_learning_rate=flags_obj.learning_rate,
-            #     decay_steps=100, # the approx. number of (observed) steps per epoch
-            #     end_learning_rate=5e4, # the fixed value learning rate
-            #     power=flags_obj.learning_decaypower)
- 
+            # SGD with polynomial decay and momentum (no weight_decay) - ...
             # optimizer = tf.keras.optimizers.SGD(
             #     learning_rate=learning_rate_fn, # type: ignore
             #     momentum=flags_obj.learning_momentum) 
-            #     #weight_decay=0.0005) # available only in TF2.10
+            #     #weight_decay=0.0005) # arg available only in TF2.10+
+
+            # AdamW with weight_decay (no momentum) - ...
+            # optimizer = tf.keras.optimizers.experimental.AdamW(
+            #     learning_rate=learning_rate, # type: ignore
+            #     weight_decay=0.0005)
 
             # Compile the model
             model.compile(
-                optimizer=optimizer, 
+                optimizer=optimizer,
                 loss=None
             )
 
@@ -341,7 +349,7 @@ def train_model(_):
     # Train/fit
     logging.info("Starting to train...")
 
-    model.fit( # type: ignore
+    history = model.fit( # type: ignore
         x=input_dataset_train,
         validation_data=input_dataset_test,
         epochs=flags_obj.train_epochs,
@@ -355,6 +363,13 @@ def train_model(_):
     model.save(save_path) # type: ignore
     # It can be used to reconstruct the model identically
     #loaded_model = tf.keras.models.load_model(save_path)
+
+    # Save training history (dictionary) as json
+    # ['accuracy', 'loss', 'val_accuracy', 'val_loss']
+    json_history = json.dumps(history.history)
+    f = open(os.path.join(save_path, "history.json","w"))
+    f.write(json_history)
+    f.close()
 
     return model
 
@@ -557,7 +572,6 @@ def define_deep_speech_flags():
         name="learning_decaypower", 
         default=0.5,
         help=flags_core.help_wrap("The learning rate polynomial decay power."))
-        
 
     flags.DEFINE_bool(
         name = "plot_model", 
