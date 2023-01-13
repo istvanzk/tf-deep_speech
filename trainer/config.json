@@ -1,5 +1,5 @@
 {
-    "data_dir": "../cv-corpus-8.0-2022-01-19/hu",
+    "data_dir": "cv-corpus-8.0-2022-01-19/hu",
     "speech_subdir": "clips-wav",
     "vocabulary_txt": "vocabulary-hu.txt",
     "train_csv": "train.csv",
