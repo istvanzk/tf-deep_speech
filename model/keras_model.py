@@ -267,6 +267,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
         if (layer_counter != 0):
             x = tf.keras.layers.BatchNormalization(
                 momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+            x = tf.keras.layers.Dropout(rate=0.5)(x)
 
         if is_bidirectional:
             x = tf.keras.layers.Bidirectional(
