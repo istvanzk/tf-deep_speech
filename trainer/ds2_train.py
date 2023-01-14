@@ -232,8 +232,8 @@ def train_model(_):
     # Get one element from the input dataset (= tuple of (features_dict, labels))
     # and print some info about it
     if DEBUG_SHAPES:
-        features_dict = list(input_dataset_train.take(1).as_numpy_iterator())[0][0]
-        labels        = list(input_dataset_train.take(1).as_numpy_iterator())[0][1]
+        features_dict = list(input_dataset_train.take(1).as_numpy_iterator())[0][0] # type: ignore
+        labels        = list(input_dataset_train.take(1).as_numpy_iterator())[0][1] # type: ignore
         features      = features_dict["features"]
         input_length  = features_dict["input_length"]
         labels_length = features_dict["labels_length"]
@@ -282,7 +282,7 @@ def train_model(_):
 
             # AdamW with weight_decay (no momentum) - ...
             # optimizer = tf.keras.optimizers.experimental.AdamW(
-            #     learning_rate=learning_rate, # type: ignore
+            #     learning_rate=flags_obj.learning_rate, # type: ignore
             #     weight_decay=0.0005)
 
             # Compile the model
