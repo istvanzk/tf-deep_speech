@@ -44,8 +44,9 @@ def main():
         # Install local packages
         packages=['trainer', 'model', 'data'],
         #packages=find_packages(),
+        install_requires=install_requires,
         include_package_data=True,
-        python_requires='>=3.8, <4',
+        python_requires='>=3.7, <4',
     )
 
 if __name__ == '__main__':
