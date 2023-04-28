@@ -15,8 +15,9 @@
 # ==============================================================================
 """Network structure for DeepSpeech2 model."""
 
+#import sys
 import tensorflow as tf
-import sys
+
 
 # Supported rnn cells.
 SUPPORTED_RNNS = {
@@ -38,8 +39,10 @@ loss_tracker = tf.keras.metrics.Mean(name="loss")
 val_loss_tracker = tf.keras.metrics.Mean(name="val_loss")
 #mae_metric = tf.keras.metrics.MeanAbsoluteError(name="mae")
 
+
 class CustomModelCTCLoss(tf.keras.Model):
     """Custom Model class with CTC loss"""
+
     def _init_(self):
         super().__init__()
 
@@ -70,20 +73,20 @@ class CustomModelCTCLoss(tf.keras.Model):
         return tf.cast(tf.math.floordiv(
             ctc_input_length, tf.cast(max_time_steps, dtype=tf.float32)), dtype=tf.int32)
 
-    
     def train_step(self, data):
         """Custom trainig step function
 
         See: https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
         https://www.tensorflow.org/tutorials/distribute/custom_training
-        
-        The data input will be what gets yielded by dataset at each batch, a tuple of (features_dict, labels)
+
+        The data input will be what gets yielded by dataset at each batch, 
+        a tuple of (features_dict, labels)
         """
         features_dict, labels = data
 
         with tf.GradientTape() as tape:
             # Forward pass
-            logits = self(features_dict['features'], training=True)  
+            logits = self(features_dict['features'], training=True)
 
             # print(f"features_shape = {tf.shape(features_dict['features'])}\nlogits_shape = {tf.shape(logits)}")
             # print(f"features = {features_dict['features']}\nlabels = {labels}")
@@ -93,12 +96,11 @@ class CustomModelCTCLoss(tf.keras.Model):
             #tf.print("logits: ",  logits, output_stream=sys.stdout)
             #tf.print("labels: ",  labels, output_stream=sys.stdout)
 
-
             # CTC input length after convolution
             ctc_input_length = tf.cast(
                 self.compute_length_after_conv(
-                    tf.shape(features_dict['features'])[1], 
-                    tf.shape(logits)[1], 
+                    tf.shape(features_dict['features'])[1],
+                    tf.shape(logits)[1],
                     features_dict['input_length']),
                 dtype=tf.int32)
 
@@ -130,14 +132,14 @@ class CustomModelCTCLoss(tf.keras.Model):
 
         return {'loss': loss_tracker.result()}
 
-
     def test_step(self, data):
         """Custom testing step function
 
         See: https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit
         https://www.tensorflow.org/tutorials/distribute/custom_training
-        
-        The data input will be what gets yielded by dataset at each batch, a tuple of (features_dict, labels)
+
+        The data input will be what gets yielded by dataset at each batch,
+        a tuple of (features_dict, labels)
         """
         features_dict, labels = data
 
@@ -147,8 +149,8 @@ class CustomModelCTCLoss(tf.keras.Model):
         # CTC input length after convolution
         ctc_input_length = tf.cast(
             self.compute_length_after_conv(
-                tf.shape(features_dict['features'])[1], 
-                tf.shape(logits)[1], 
+                tf.shape(features_dict['features'])[1],
+                tf.shape(logits)[1],
                 features_dict['input_length']),
             dtype=tf.int32)
         # Update the loss
@@ -160,7 +162,6 @@ class CustomModelCTCLoss(tf.keras.Model):
 
         return {'loss': val_loss_tracker.result()}
 
-
     @property
     def metrics(self):
         # We list our `Metric` objects here so that `reset_states()` can be
@@ -169,7 +170,6 @@ class CustomModelCTCLoss(tf.keras.Model):
         # If you don't implement this property, you have to call
         # `reset_states()` yourself at the time of your choosing.
         return [loss_tracker, val_loss_tracker]
-
 
 
 # def WER(labels, logits):
@@ -192,7 +192,7 @@ class CustomModelCTCLoss(tf.keras.Model):
 
 
 def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional,
-                rnn_hidden_size, use_bias):
+              rnn_hidden_size, use_bias):
     """Define DeepSpeech2 model using Keras Functional API.
 
     Args:
@@ -207,98 +207,114 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     Returns:
         A Keras model.   
     """
+    #pylint: disable=invalid-name
     padding_conv_1 = (20, 5)
     padding_conv_2 = (10, 5)
 
     # Input layers
-    input_      = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
+    input_ = tf.keras.layers.Input(shape=(None, input_dim, 1), name="features")
     #inputlng_   = tf.keras.layers.Input(shape=(1), name="input_length")
     #labels_     = tf.keras.layers.Input(shape=(1), name="labels")
     #labelslng_  = tf.keras.layers.Input(shape=(1), name="labels_length")
 
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
-    # This step is required to avoid issues when RNN output sequence is shorter than the label length.
+    # This step is required to avoid issues when RNN output sequence
+    # is shorter than the label length.
     x = tf.keras.layers.ZeroPadding2D(padding=padding_conv_1)(input_)
 
     # 2-D CNN layer
+    # activation=tf.nn.relu6 is applied after BN!
     x = tf.keras.layers.Conv2D(
         filters=_CONV_FILTERS, kernel_size=[41, 11], strides=[2, 2],
-        padding="valid", use_bias=False, activation=tf.nn.relu6,
+        padding="valid", use_bias=False,
         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
         name="conv_1")(x)
 
     # Batch normalisation
-    # During inference (i.e. when using evaluate() or predict() or when calling the layer/model with the argument training=False)
-    # During training (i.e. when using fit() or when calling the layer/model with the argument training=True)
+    # During inference (i.e. when using evaluate() or predict() or
+    # # when calling the layer/model with the argument training=False)
+    # During training (i.e. when using fit() or when calling
+    # the layer/model with the argument training=True)
     x = tf.keras.layers.BatchNormalization(
         momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+
+    # Relu6 activation, min(max(features, 0), 6)
+    x= tf.keras.layers.ReLU(
+        max_value=6, negative_slope=0.0, threshold=0.0)(x)
 
     x = tf.keras.layers.Dropout(rate=0.5)(x)
 
     # Padding layer
     # Perform symmetric padding on the feature dimension of time_step
-    # This step is required to avoid issues when RNN output sequence is shorter than the label length.   
+    # This step is required to avoid issues when RNN output sequence
+    # is shorter than the label length.
     x = tf.keras.layers.ZeroPadding2D(padding=padding_conv_2)(x)
 
     # 2-D CNN layer
     x = tf.keras.layers.Conv2D(
         filters=_CONV_FILTERS, kernel_size=[21, 11], strides=[2, 1],
-        padding="valid", use_bias=False, activation=tf.nn.relu6,
+        padding="valid", use_bias=False,
         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
         name="conv_2")(x)
 
     # Batch normalisation
     x = tf.keras.layers.BatchNormalization(
         momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+    
+    # Relu6 activation
+    x= tf.keras.layers.ReLU(
+        max_value=6, negative_slope=0.0, threshold=0.0)(x)
 
     x = tf.keras.layers.Dropout(rate=0.5)(x)
-
 
     # Output of 2nd conv layer with the shape of
     # [batch_size (N), times (T), features (F), channels (C)].
     # Convert the conv output to rnn input.
-    x = tf.keras.layers.Reshape((-1, x.shape[-2] * x.shape[-1]))(x) # type: ignore
+    x = tf.keras.layers.Reshape(
+        (-1, x.shape[-2] * x.shape[-1]))(x) # type: ignore
 
     # RNN layers
     rnn_cell = SUPPORTED_RNNS[rnn_type]
     for layer_counter in range(num_rnn_layers):
-        # No batch normalization on the first layer.
-        if (layer_counter != 0):
-            x = tf.keras.layers.BatchNormalization(
-                momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
-            x = tf.keras.layers.Dropout(rate=0.5)(x)
 
         if is_bidirectional:
             x = tf.keras.layers.Bidirectional(
-                    tf.keras.layers.RNN(rnn_cell(rnn_hidden_size),
-                        return_sequences=True),
-                    name=f"bidirectional_{layer_counter}")(x)
+                tf.keras.layers.RNN(rnn_cell(rnn_hidden_size),
+                                    return_sequences=True),
+                name=f"bidirectional_{layer_counter}")(x)
         else:
             x = tf.keras.layers.RNN(
-                rnn_cell(rnn_hidden_size), 
-                    return_sequences=True,
-                    name=f"rnn_{layer_counter}")(x)
+                rnn_cell(rnn_hidden_size),
+                return_sequences=True,
+                name=f"rnn_{layer_counter}")(x)
+
+        # No batch normalization on the first layer.
+        if layer_counter != 0:
+            x = tf.keras.layers.BatchNormalization(
+                momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
 
     # Output layer: FC layer with batch norm
-    x = tf.keras.layers.BatchNormalization(
-            momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
-
-    x = tf.keras.layers.Dropout(rate=0.5)(x)
-  
     output_ = tf.keras.layers.Dense(
-        units=num_classes+1, 
-        use_bias=use_bias, 
+        units=num_classes+1,
+        use_bias=use_bias,
         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-        bias_regularizer=tf.keras.regularizers.l2(0.0005),
-        activation="softmax")(x)
+        bias_regularizer=tf.keras.regularizers.l2(0.0005))(x)
+
+    # Batch normalisation
+    x = tf.keras.layers.BatchNormalization(
+        momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+
+    # Softmax activation
+    x = tf.keras.layers.Softmax()(x)
 
     # The model
     #inputs=[input_, inputlng_, labels_, labelslng_]
-    #model = tf.keras.Model(
+    # model = tf.keras.Model(
     model = CustomModelCTCLoss(
-        inputs=input_, 
-        outputs=output_, 
+        inputs=input_,
+        outputs=output_,
         name="DeepSpeech2_KerasModel")
 
     return model
+    #pylint: enable=invalid-name
