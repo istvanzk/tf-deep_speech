@@ -19,30 +19,32 @@ import os
 import datetime
 import json
 
-# Disable all GPUs. This prevents errors caused by all workers trying to use the same GPU. 
+import tensorflow as tf
+
+from absl import app as absl_app
+from absl import flags
+from absl import logging
+logging.set_verbosity(logging.ERROR)
+
+from official.common import distribute_utils as distribution_utils
+from official.utils.flags import core as flags_core
+
+import decoder
+import data.dataset as dataset
+from model.keras_model import ds2_model, SUPPORTED_RNNS  # type: ignore
+
+# Disable all GPUs. This prevents errors caused by all workers trying to use the same GPU.
 # In a real-world application, each worker would be on a different machine.
 #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 # Reset the 'TF_CONFIG' environment variable
 #os.environ.pop('TF_CONFIG', None)
 
-# pylint: disable=g-bad-import-order
-from absl import app as absl_app
-from absl import flags
-from absl import logging
-logging.set_verbosity(logging.ERROR)
-import tensorflow as tf
 #import tensorflow_cloud as tfc
-#tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-# pylint: enable=g-bad-import-order
+# tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 # Local modules
-import data.dataset as dataset
-import decoder
-from model.keras_model import ds2_model, SUPPORTED_RNNS # type: ignore
 
 # Modules from tf-models-official
-from official.utils.flags import core as flags_core
-from official.common import distribute_utils as distribution_utils
 #from official.utils.misc import model_helpers
 
 # Evaluation metrics
@@ -55,17 +57,21 @@ DEBUG_SHAPES = True
 # Simulate multiple CPUs with virtual devices
 N_VIRTUAL_DEVICES = 1
 
+
 def generate_dataset(dataset_csv):
     """Generate a speech dataset."""
     audio_conf = dataset.AudioConfig(sample_rate=flags_obj.sample_rate,
-                                    window_ms=flags_obj.window_ms,
-                                    stride_ms=flags_obj.stride_ms,
-                                    num_feature_bins=flags_obj.num_feature_bins,
-                                    normalize=True)
-    
-    logging.info(f"Dataset CSV: {os.path.join(flags_obj.data_dir, dataset_csv)}")
-    logging.info(f"Speech data: {os.path.join(flags_obj.data_dir, flags_obj.speech_dir)}")
-    logging.info(f"Vocabulary data: {os.path.join(flags_obj.data_dir, flags_obj.vocabulary_file)}")
+                                     window_ms=flags_obj.window_ms,
+                                     stride_ms=flags_obj.stride_ms,
+                                     num_feature_bins=flags_obj.num_feature_bins,
+                                     normalize=True)
+
+    logging.info(
+        f"Dataset CSV: {os.path.join(flags_obj.data_dir, dataset_csv)}")
+    logging.info(
+        f"Speech data: {os.path.join(flags_obj.data_dir, flags_obj.speech_dir)}")
+    logging.info(
+        f"Vocabulary data: {os.path.join(flags_obj.data_dir, flags_obj.vocabulary_file)}")
 
     train_data_conf = dataset.DatasetConfig(
         audio_conf,
@@ -76,6 +82,7 @@ def generate_dataset(dataset_csv):
     )
     speech_dataset = dataset.DeepSpeechDataset(train_data_conf)
     return speech_dataset
+
 
 def per_device_batch_size(batch_size, num_gpus):
     """For multi-gpu, batch-size must be a multiple of the number of GPUs.
@@ -101,11 +108,12 @@ def per_device_batch_size(batch_size, num_gpus):
     remainder = batch_size % num_gpus
     if remainder:
         err = ('When running with multiple GPUs, batch size '
-            'must be a multiple of the number of available GPUs. Found {} '
-            'GPUs with a batch size of {}; try --batch_size={} instead.'
-            ).format(num_gpus, batch_size, batch_size - remainder)
+               'must be a multiple of the number of available GPUs. Found {} '
+               'GPUs with a batch size of {}; try --batch_size={} instead.'
+               ).format(num_gpus, batch_size, batch_size - remainder)
         raise ValueError(err)
     return int(batch_size / num_gpus)
+
 
 def evaluate_model(model):
     """Evaluate the model performance using WER anc CER as metrics.
@@ -122,14 +130,15 @@ def evaluate_model(model):
     """
     # Evaluation
     logging.info("Starting to evaluate...")
-   
+
     # Input dataset
     eval_speech_dataset = generate_dataset(flags_obj.eval_data_csv)
-    speech_labels       = eval_speech_dataset.speech_labels
-    entries             = eval_speech_dataset.entries
+    speech_labels = eval_speech_dataset.speech_labels
+    entries = eval_speech_dataset.entries
 
     # Input dataset (generator function)
-    input_dataset_eval = dataset.input_fn(flags_obj.batch_size, eval_speech_dataset)
+    input_dataset_eval = dataset.input_fn(
+        flags_obj.batch_size, eval_speech_dataset)
 
     # Evaluate
     probs = model.predict(
@@ -142,7 +151,8 @@ def evaluate_model(model):
     targets = [entry[2] for entry in entries]  # The ground truth transcript
 
     total_wer, total_cer = 0, 0
-    greedy_decoder = decoder.DeepSpeechDecoder(speech_labels, blank_index=len(speech_labels))
+    greedy_decoder = decoder.DeepSpeechDecoder(
+        speech_labels, blank_index=len(speech_labels))
     for i in range(num_of_examples):
         # Decode string.
         decoded_str = greedy_decoder.decode(probs[i])
@@ -156,7 +166,7 @@ def evaluate_model(model):
         # Output the transcripts
         logging.info(f"Target: {targets[i][:-1]}")
         logging.info(f"Predicted: {decoded_str}")
-        logging.info(f"---")
+        logging.info("---")
 
     # Get mean value
     total_cer /= num_of_examples
@@ -167,26 +177,27 @@ def evaluate_model(model):
         _CER_KEY: total_cer,
     }
 
-    logging.info(f"==> Evaluation results: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
+    logging.info(
+        f"==> Evaluation results: WER = {eval_results[_WER_KEY]:.2f}, CER = {eval_results[_CER_KEY]:.2f}")
 
     return eval_results
 
 
 def train_model(_):
     """Run DeepSpeech2 training loop (TF2/Keras).
-    
+
     Args:
         flags.FLAGS from absl 
 
     Returns:
         Keras trained model.   
     """
-    
-    # Initialise random seed 
+
+    # Initialise random seed
     tf.random.set_seed(flags_obj.seed)
 
     # Number of GPUs to use
-    num_gpus = flags_core.get_num_gpus(flags_obj)   
+    num_gpus = flags_core.get_num_gpus(flags_obj)
 
     # Simulate multiple CPUs with virtual devices
     if num_gpus == 0 and N_VIRTUAL_DEVICES > 1:
@@ -203,27 +214,31 @@ def train_model(_):
     logging.info("Data preprocessing...")
     train_speech_dataset = generate_dataset(flags_obj.train_data_csv)
     test_speech_dataset = generate_dataset(flags_obj.test_data_csv)
-    
+
     # Number of label classes. Label string is generated from the --vocabulary_file file
     num_classes = len(train_speech_dataset.speech_labels)
 
-    # Set distributionn strategy 
+    # Set distributionn strategy
     # Uses MirroredStrategy as default, distribution_strategy="mirrored"
-    # MirroredStrategy trains your model on multiple GPUs on a single machine/worker. 
+    # MirroredStrategy trains your model on multiple GPUs on a single machine/worker.
     # For synchronous training on many GPUs on multiple workers, use distribution_strategy="multi_worker_mirrored"
-    distribution_strategy = distribution_utils.get_distribution_strategy(num_gpus=num_gpus) 
+    distribution_strategy = distribution_utils.get_distribution_strategy(
+        num_gpus=num_gpus)
     # if num_gpus == 0:
     #   devices = ["device:CPU:0"]
     # else:
     #   devices = ["device:GPU:%d" % i for i in range(num_gpus)]
-    # distribution_strategy = tf.distribute.MirroredStrategy(devices=devices)   
+    # distribution_strategy = tf.distribute.MirroredStrategy(devices=devices)
 
     # Input datasets (generator functions)
-    # The input batch of data specified in flags_obj.batch_size (called global batch) is automatically split 
+    # The input batch of data specified in flags_obj.batch_size (called global batch) is automatically split
     # into num_replicas_in_sync different sub-batches (called local batches)
-    per_replica_batch_size = per_device_batch_size(flags_obj.batch_size, distribution_strategy.num_replicas_in_sync)
-    input_dataset_train = dataset.input_fn(per_replica_batch_size * distribution_strategy.num_replicas_in_sync, train_speech_dataset)
-    input_dataset_test  = dataset.input_fn(per_replica_batch_size * distribution_strategy.num_replicas_in_sync, test_speech_dataset)
+    per_replica_batch_size = per_device_batch_size(
+        flags_obj.batch_size, distribution_strategy.num_replicas_in_sync)
+    input_dataset_train = dataset.input_fn(
+        per_replica_batch_size * distribution_strategy.num_replicas_in_sync, train_speech_dataset)
+    input_dataset_test = dataset.input_fn(
+        per_replica_batch_size * distribution_strategy.num_replicas_in_sync, test_speech_dataset)
 
     # These are iterators over DataSet
     #train_dist_dataset = distribution_strategy.experimental_distribute_dataset(input_dataset_train)
@@ -232,12 +247,15 @@ def train_model(_):
     # Get one element from the input dataset (= tuple of (features_dict, labels))
     # and print some info about it
     if DEBUG_SHAPES:
-        features_dict = list(input_dataset_train.take(1).as_numpy_iterator())[0][0] # type: ignore
-        labels        = list(input_dataset_train.take(1).as_numpy_iterator())[0][1] # type: ignore
-        features      = features_dict["features"]
-        input_length  = features_dict["input_length"]
+        features_dict = list(input_dataset_train.take(
+            1).as_numpy_iterator())[0][0]  # type: ignore
+        labels = list(input_dataset_train.take(1).as_numpy_iterator())[
+            0][1]  # type: ignore
+        features = features_dict["features"]
+        input_length = features_dict["input_length"]
         labels_length = features_dict["labels_length"]
-        print(f"input_length_shape = {input_length.shape}\nlabels_shape = {labels.shape}\nlabels_length_shape = {labels_length.shape}\nfeatures_shape = {features.shape}")
+        print(
+            f"input_length_shape = {input_length.shape}\nlabels_shape = {labels.shape}\nlabels_length_shape = {labels_length.shape}\nfeatures_shape = {features.shape}")
         #print(f"input_length = {input_length}\nlabels = {labels}\nlabels_length = {labels_length}\n")
 
     # Use distribution strategy for multi-gpu on single worker training (when available)
@@ -252,7 +270,7 @@ def train_model(_):
         # https://tensorflow.google.cn/tutorials/distribute/save_and_load
         if flags_obj.model_load is None or flags_obj.model_load == "_":
             # Generate a new model
-            logging.info(f"Generate new Model...")
+            logging.info("Generate new Model...")
             model = ds2_model(
                 flags_obj.num_feature_bins,
                 num_classes,
@@ -263,21 +281,21 @@ def train_model(_):
 
             # PolynomialDecay learning rate scheduler
             # https://keras.io/api/optimizers/learning_rate_schedules/polynomial_decay/
-            learning_rate_fn = tf.keras.optimizers.schedules.PolynomialDecay(
-                initial_learning_rate=flags_obj.learning_rate,
-                decay_steps=1000, # with 100 steps per epoch
-                end_learning_rate=1e-4,
-                power=flags_obj.learning_decaypower)
- 
+            # learning_rate_fn = tf.keras.optimizers.schedules.PolynomialDecay(
+            #     initial_learning_rate=flags_obj.learning_rate,
+            #     decay_steps=1000,  # with 100 steps per epoch
+            #     end_learning_rate=1e-4,
+            #     power=flags_obj.learning_decaypower)
 
             # Optimizer
             # Adam with fixed learning rate - Works & learns, but requires too many epochs (>>40)!
-            optimizer = tf.keras.optimizers.Adam(learning_rate=flags_obj.learning_rate)
+            optimizer = tf.keras.optimizers.Adam(
+                learning_rate=flags_obj.learning_rate)
 
             # SGD with polynomial decay and momentum (no weight_decay) - ...
             # optimizer = tf.keras.optimizers.SGD(
             #     learning_rate=learning_rate_fn, # type: ignore
-            #     momentum=flags_obj.learning_momentum) 
+            #     momentum=flags_obj.learning_momentum)
             #     #weight_decay=0.0005) # arg available only in TF2.10+
 
             # AdamW with weight_decay (no momentum) - ...
@@ -296,22 +314,22 @@ def train_model(_):
             load_path = os.path.join(flags_obj.model_dir, flags_obj.model_load)
             logging.info(f"Load Model from: {load_path} ...")
             from model.keras_model import CustomModelCTCLoss
-            model = tf.keras.models.load_model(load_path, custom_objects={"CustomModelCTCLoss": CustomModelCTCLoss})
+            model = tf.keras.models.load_model(load_path, custom_objects={
+                                               "CustomModelCTCLoss": CustomModelCTCLoss})
 
     # Plot summary of the model
     if flags_obj.plot_model:
         logging.info("Plot model summary...")
 
-        model.summary(line_length=110) # type: ignore
+        model.summary(line_length=110)  # type: ignore
 
         # tf.keras.utils.plot_model(
-        #     model, 
-        #     to_file=os.path.join(flags_obj.model_dir, "ds2_model.png"), 
+        #     model,
+        #     to_file=os.path.join(flags_obj.model_dir, "ds2_model.png"),
         #     show_shapes=True,
         #     show_dtype=True,
         #     show_layer_names=True,
         # )
-
 
     # Set output paths and callbacks for training
     callbacks = []
@@ -323,7 +341,7 @@ def train_model(_):
     # logging.info(f"TB logs: {tensorboard_path}")
     # callbacks.append(
     #     tf.keras.callbacks.TensorBoard(
-    #         log_dir=tensorboard_path, 
+    #         log_dir=tensorboard_path,
     #         histogram_freq=1)
     # )
 
@@ -331,7 +349,7 @@ def train_model(_):
     callbacks.append(
         tf.keras.callbacks.EarlyStopping(
             monitor="loss",
-            patience=5, 
+            patience=5,
             verbose=1,
             restore_best_weights=True)
     )
@@ -341,7 +359,7 @@ def train_model(_):
     callbacks.append(
         tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path,
-            monitor="loss", 
+            monitor="loss",
             verbose=1,
             save_best_only=False)
     )
@@ -349,32 +367,34 @@ def train_model(_):
     # Train/fit
     logging.info("Starting to train...")
 
-    history = model.fit( # type: ignore
+    history = model.fit(  # type: ignore
         x=input_dataset_train,
         validation_data=input_dataset_test,
         epochs=flags_obj.train_epochs,
         callbacks=callbacks,
-        verbose=2, # type: ignore
+        verbose=2,  # type: ignore
     )
 
     # Save the model (creates a SavedModel folder)
-    save_path = os.path.join(flags_obj.model_dir,"ds2_final")
+    save_path = os.path.join(flags_obj.model_dir, "ds2_final")
     logging.info(f"Saving trained model to {save_path}...")
-    model.save(save_path) # type: ignore
+    model.save(save_path)  # type: ignore
     # It can be used to reconstruct the model identically
     #loaded_model = tf.keras.models.load_model(save_path)
 
     # Save training history (dictionary) as json
     # ['accuracy', 'loss', 'val_accuracy', 'val_loss']
     json_history = json.dumps(history.history)
-    f = open(os.path.join(save_path, "history.json","w"))
+    f = open(os.path.join(save_path, "history.json"), mode="w", encoding="utf-8")
     f.write(json_history)
     f.close()
 
     return model
 
+
 def define_deep_speech_flags():
     """Add flags for train_model."""
+    #pylint: disable=invalid-name
     # Add common flags
     flags_core.define_base(
         data_dir=False,  # we use train_data_csv and test_data_csv instead
@@ -400,7 +420,7 @@ def define_deep_speech_flags():
     # Default dataset path
     _DATA_DIR = "./data/cv-corpus-8.0-2022-01-19/hu"
 
-    # Default vocabulary file, under _DATA_DIR 
+    # Default vocabulary file, under _DATA_DIR
     _VOCABULARY_FILE = "vocabulary-hu.txt"
 
     # Default WAV files path, under _DATA_DIR
@@ -408,11 +428,11 @@ def define_deep_speech_flags():
 
     # Default csv file names, under _DATA_DIR
     _TRAIN_CSV = "train.csv"
-    _TEST_CSV  = "test.csv"
-    _DEV_CSV   = "dev.csv"
+    _TEST_CSV = "test.csv"
+    _DEV_CSV = "dev.csv"
 
     # Default output model path
-    _MODEL_DIR  = "model_v0"
+    _MODEL_DIR = "model_v0"
     # Default model (SavedModel folder) to evaluate, under _MODEL_DIR
     _MODEL_EVAL = "ds2_final"
     # Default model (SavedModel folder) to load for further training, under _MODEL_DIR
@@ -425,22 +445,22 @@ def define_deep_speech_flags():
     # Load parameter values from JSON file, if it exist
     # Overwrites the above defaults!
     if tf.io.gfile.exists("trainer/config.json"):
-        with open("trainer/config.json", 'r') as f:
+        with open("trainer/config.json", 'r', encoding='utf-8') as f:
             params = json.load(f)
 
         logging.info("Default parameters loaded from: trainer/config.json")
-        _DATA_DIR   = params["data_dir"]
+        _DATA_DIR = params["data_dir"]
         _SPEECH_DIR = params["speech_subdir"]
         _VOCABULARY_FILE = params["vocabulary_txt"]
-        _TRAIN_CSV  = params["train_csv"]
-        _TEST_CSV   = params["test_csv"]
-        _DEV_CSV    = params["dev_csv"]
-        _MODEL_DIR  = params["model_dir"]
+        _TRAIN_CSV = params["train_csv"]
+        _TEST_CSV = params["test_csv"]
+        _DEV_CSV = params["dev_csv"]
+        _MODEL_DIR = params["model_dir"]
         _MODEL_EVAL = params["model_eval"]
         _MODEL_LOAD = params["model_load"]
 
         _EPOCHS = params["train_epochs"]
-        _BATCH  = params["batch_size"]
+        _BATCH = params["batch_size"]
 
     #
     # Parameters configurable from JSON or as args
@@ -474,12 +494,12 @@ def define_deep_speech_flags():
         help=flags_core.help_wrap("The csv file path of the evaluation dataset, under data_dir."))
 
     flags.DEFINE_string(
-        name= "speech_dir",
+        name="speech_dir",
         default=_SPEECH_DIR,
         help=flags_core.help_wrap("The speech files path, under under data_dir"))
 
     flags.DEFINE_string(
-        name="vocabulary_file", 
+        name="vocabulary_file",
         default=_VOCABULARY_FILE,
         help=flags_core.help_wrap("The vocabulary file path, under data_dir."))
 
@@ -498,60 +518,60 @@ def define_deep_speech_flags():
     #
     # Deep speech flags
     flags.DEFINE_integer(
-        name="seed", 
+        name="seed",
         default=1,
         help=flags_core.help_wrap("The random seed."))
 
     flags.DEFINE_bool(
-        name="sortagrad", 
+        name="sortagrad",
         default=True,
         help=flags_core.help_wrap(
             "If true, sort examples by audio length and perform no "
             "batch_wise shuffling for the first epoch."))
 
     flags.DEFINE_integer(
-        name="sample_rate", 
+        name="sample_rate",
         default=16000,
         help=flags_core.help_wrap("The sample rate for audio."))
 
     flags.DEFINE_integer(
-        name="window_ms", 
+        name="window_ms",
         default=20,
         help=flags_core.help_wrap("The frame length for spectrogram."))
 
     flags.DEFINE_integer(
-        name="stride_ms", 
+        name="stride_ms",
         default=10,
         help=flags_core.help_wrap("The frame step."))
 
     flags.DEFINE_integer(
-        name="num_feature_bins", 
+        name="num_feature_bins",
         default=161,
         help=flags_core.help_wrap("The size of the spectrogram."))
 
     # RNN related flags
     flags.DEFINE_integer(
-        name="rnn_hidden_size", 
+        name="rnn_hidden_size",
         default=800,
         help=flags_core.help_wrap("The hidden size of RNNs."))
 
     flags.DEFINE_integer(
-        name="rnn_hidden_layers", 
+        name="rnn_hidden_layers",
         default=4,
         help=flags_core.help_wrap("The number of RNN layers."))
 
     flags.DEFINE_bool(
-        name="use_bias", 
+        name="use_bias",
         default=True,
         help=flags_core.help_wrap("Use bias in the last fully-connected layer"))
 
     flags.DEFINE_bool(
-        name="is_bidirectional", 
+        name="is_bidirectional",
         default=True,
         help=flags_core.help_wrap("If rnn unit is bidirectional"))
 
     flags.DEFINE_enum(
-        name="rnn_type", 
+        name="rnn_type",
         default="gru",
         enum_values=SUPPORTED_RNNS.keys(),
         case_sensitive=False,
@@ -559,28 +579,28 @@ def define_deep_speech_flags():
 
     # Training related flags
     flags.DEFINE_float(
-        name="learning_rate", 
-        default=1e-3, #5e-4 for fixed
+        name="learning_rate",
+        default=1e-3,  # 5e-4 for fixed
         help=flags_core.help_wrap("The initial learning rate."))
 
     flags.DEFINE_float(
-        name="learning_momentum", 
+        name="learning_momentum",
         default=0.9,
         help=flags_core.help_wrap("The learning rate momentum."))
 
     flags.DEFINE_float(
-        name="learning_decaypower", 
+        name="learning_decaypower",
         default=0.5,
         help=flags_core.help_wrap("The learning rate polynomial decay power."))
 
     flags.DEFINE_bool(
-        name = "plot_model", 
+        name="plot_model",
         default=True,
         help=flags_core.help_wrap("If model is to be shown, ploted and saved to ds2_model.png"))
 
     # Evaluation metrics threshold
     flags.DEFINE_float(
-        name="wer_threshold", 
+        name="wer_threshold",
         default=None,
         help=flags_core.help_wrap(
             "If passed, training will stop when the evaluation metric WER is "
@@ -588,6 +608,7 @@ def define_deep_speech_flags():
             "the desired wer_threshold is 0.23 which is the result achieved by "
             "MLPerf implementation."))
 
+    #pylint: enable=invalid-name
 
 def main(_):
     """Entry point when running locally from absl.app"""
@@ -600,6 +621,7 @@ def main(_):
     load_path = os.path.join(flags_obj.model_dir, flags_obj.model_eval)
     loaded_model = tf.keras.models.load_model(load_path)
     evaluate_model(loaded_model)
+
 
 if __name__ == "__main__":
     logging.set_verbosity(logging.DEBUG)
