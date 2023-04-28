@@ -1,7 +1,11 @@
 data/cv-corpus-*
 data/*.gz
 cv-corpus-*
+*.svg
+*.png
+*.dot
 *.gz
+*.pdf
 *.egg-info
 *.code-workspace
 *.pyc
