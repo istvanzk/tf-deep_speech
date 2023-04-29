@@ -274,7 +274,7 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
     x = tf.keras.layers.Reshape(
         (-1, x.shape[-2] * x.shape[-1]))(x) # type: ignore
 
-    # RNN layers
+    # RNN layers w/ batch normalisation
     rnn_cell = SUPPORTED_RNNS[rnn_type]
     for layer_counter in range(num_rnn_layers):
 
@@ -289,24 +289,23 @@ def ds2_model(input_dim, num_classes, num_rnn_layers, rnn_type, is_bidirectional
                 return_sequences=True,
                 name=f"rnn_{layer_counter}")(x)
 
-        # No batch normalization on the first layer.
-        if layer_counter != 0:
-            x = tf.keras.layers.BatchNormalization(
-                momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+        # Batch normalisation
+        x = tf.keras.layers.BatchNormalization(
+            momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
 
     # Output layer: FC layer with batch norm
-    output_ = tf.keras.layers.Dense(
+    x = tf.keras.layers.Dense(
         units=num_classes+1,
         use_bias=use_bias,
         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
         bias_regularizer=tf.keras.regularizers.l2(0.0005))(x)
 
     # Batch normalisation
-    x = tf.keras.layers.BatchNormalization(
-        momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
+    #x = tf.keras.layers.BatchNormalization(
+    #    momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON)(x)
 
     # Softmax activation
-    x = tf.keras.layers.Softmax()(x)
+    output_ = tf.keras.layers.Softmax()(x)
 
     # The model
     #inputs=[input_, inputlng_, labels_, labelslng_]
