@@ -16,13 +16,14 @@ Development plans & status:
 - [x] Updates to use [absl-py](https://abseil.io/docs/python/) python package
 - [x] Updates to work with [Common Voice Corpus 2](https://commonvoice.mozilla.org/en/datasets) 
 - [x] Refactor code to use Keras Functional API
-- [x] Remove old code which uses tf.estimator and update ReadMe for the use of the new code which uses Keras Functional AP
+- [x[ Update ReadMe for the use of the new code which uses Keras Functional AP
 - [x] Modularize to match custom training requirements on GC with Vertex AI
 - [x] Local training test (Python 3.8+)
 - [x] Custom training job in custom container on GC (Vertex AI, Artifacts Registry, etc.)
-- [x] Custom training in VertexAI/Workbench, JupyterLab notebook (VM instance with one GPU T4)
-- [ ] Fine-tune training and test performance - Ongoing
-- [ ] Make it work with [Rahsspy](https://github.com/rhasspy/rhasspy), as replacement for the [Mozilla DeepSpeech](https://github.com/mozilla/DeepSpeech)
+- [x] Custom training in VertexAI/Workbench, JupyterLab notebook (VM instance with 1x GPU T4)
+- [x] Fine-tuned model training performance
+- [ ] Remove old code which uses tf.estimator, etc.
+- [ ] Compile and make it work with [Rahsspy](https://github.com/rhasspy/rhasspy), as replacement for the [Mozilla DeepSpeech](https://github.com/mozilla/DeepSpeech)
 
 
 
