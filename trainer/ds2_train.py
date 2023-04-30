@@ -394,6 +394,7 @@ def train_model(_):
 def define_deep_speech_flags():
     """Add flags for train_model."""
     #pylint: disable=invalid-name
+    #pylint: disable=too-many-statements
     # Add common flags
     flags_core.define_base(
         data_dir=False,  # we use train_data_csv and test_data_csv instead
@@ -556,7 +557,7 @@ def define_deep_speech_flags():
 
     flags.DEFINE_integer(
         name="rnn_hidden_layers",
-        default=4,
+        default=2,
         help=flags_core.help_wrap("The number of RNN layers."))
 
     flags.DEFINE_bool(
@@ -579,7 +580,7 @@ def define_deep_speech_flags():
     # Training related flags
     flags.DEFINE_float(
         name="learning_rate",
-        default=1e-3,  # 5e-4 for fixed
+        default=5e-4,  # 5e-4 for fixed
         help=flags_core.help_wrap("The initial learning rate."))
 
     flags.DEFINE_float(
@@ -608,6 +609,7 @@ def define_deep_speech_flags():
             "MLPerf implementation."))
 
     #pylint: enable=invalid-name
+    #pylint: enable=too-many-statements
 
 def main(_):
     """Entry point when running locally from absl.app"""
