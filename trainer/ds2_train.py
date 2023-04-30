@@ -385,10 +385,9 @@ def train_model(_):
     # Save training history (dictionary) as json
     # ['accuracy', 'loss', 'val_accuracy', 'val_loss']
     json_history = json.dumps(history.history)
-    f = open(os.path.join(save_path, "history.json"), mode="w", encoding="utf-8")
-    f.write(json_history)
-    f.close()
-
+    with tf.io.gfile.GFile(os.path.join(save_path, "history.json"), "w") as fout:
+        fout.write(json_history)
+    
     return model
 
 
